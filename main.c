@@ -69,6 +69,7 @@ int main() {
         al_draw_text(fonte, al_map_rgb(0, 0, 0), 100, 100, 0, "Horario: 15:30");
         al_flip_display();
     }
+    //SIXX AND SEVENNN, ZÉ DA MANGA, AMOSTRADINHO, BORA BILL, CALABRESO, SANDALIO, SANSUMGO
 
     al_destroy_bitmap(bg);
     al_destroy_display(display);
@@ -77,4 +78,4 @@ int main() {
     //destroi a janela
     return 0;
 }
-//vou me matar de 00:00
+//vpu me matar
