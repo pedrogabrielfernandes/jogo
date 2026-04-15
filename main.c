@@ -71,8 +71,8 @@ int main() {
     ALLEGRO_EVENT evento;
     int rodando = 1;
     float frame = 0.f;
-    int pos_x = 0;
-    int pos_y = 560;
+    int pos_x = 462;
+    int pos_y = 707;
     int current_frame_y = 0;
     ALLEGRO_KEYBOARD_STATE state;
 
@@ -106,14 +106,14 @@ int main() {
                 if (frame > 5) frame -= 5;
                 pos_y -= 40;
                 al_draw_bitmap_region(jump, 96 * (int)frame, current_frame_y, 96, 84, pos_x, pos_y, 0);
-                pos_y = 560;
+                pos_y = 707;
             }
             else{
                 if (frame > 7) frame -= 7;
                 al_draw_bitmap_region(idle, 96 * (int)frame, current_frame_y, 96, 84, pos_x, pos_y, 0);
             }
 
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), 100, 100, 0, "");
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), 1750, 104, 0, "HORARIO");
             al_flip_display();
         }
     }
