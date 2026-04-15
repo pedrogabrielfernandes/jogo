@@ -136,3 +136,5 @@ int main() {
 //se tem duvidas, leia as instuções na pasta do jogo.
 
 //Novo código compilador universal -> gcc main.c -o jogo $(pkg-config --cflags --libs allegro-5 allegro_font-5 allegro_ttf-5 allegro_image-5) 
+
+//TESTANDO AQ PCR (JOIA)
