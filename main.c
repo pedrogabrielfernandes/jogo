@@ -128,6 +128,10 @@ int main() {
 
     return 0;
 }
+ 
+//git add .
+//git commit -m "mensagem do commit"
+//git push
 
 //se tem duvidas, leia as instuções na pasta do jogo.
 
