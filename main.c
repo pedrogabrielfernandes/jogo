@@ -36,8 +36,12 @@ typedef struct {
     float x;
     float y;
     float vel_y;
-    float frame;
+} Movimento;
 
+typedef struct {
+    Movimento mov;
+
+    float frame;
     int no_chao;
     int direcao;
     int movendo;
@@ -113,9 +117,9 @@ if (jogador == NULL) {
     return 1;
 }
 
-jogador->x = 60;
-jogador->y = 253;
-jogador->vel_y = 0;
+jogador->mov.x = 60;
+jogador->mov.y = 253;
+jogador->mov.vel_y = 0;
 jogador->frame = 0;
 
 jogador->no_chao = 0;
@@ -141,9 +145,9 @@ jogador->movendo = 0;
 
             al_get_keyboard_state(&state);
 
-            jogador->no_chao = esta_no_chao(mapa, jogador->x, jogador->y);
+            jogador->no_chao = esta_no_chao(mapa, jogador->mov.x, jogador->mov.y);
 
-            float novo_x = jogador->x;
+            float novo_x = jogador->mov.x;
 
             if (al_key_down(&state, ALLEGRO_KEY_D)) {
                 novo_x += VELOCIDADE;
@@ -157,34 +161,34 @@ jogador->movendo = 0;
                 jogador->movendo = 1;
             }
 
-            if (!colide_mapa(mapa, novo_x, jogador->y)) {
-                jogador->x = novo_x;
+            if (!colide_mapa(mapa, novo_x, jogador->mov.y)) {
+                jogador->mov.x = novo_x;
             }
 
             if (al_key_down(&state, ALLEGRO_KEY_W) && jogador->no_chao) {
-                jogador->vel_y = FORCA_PULO;
+                jogador->mov.vel_y = FORCA_PULO;
             }
 
-            jogador->vel_y += GRAVIDADE;
-            if (jogador->vel_y > MAX_QUEDA) jogador->vel_y = MAX_QUEDA;
+            jogador->mov.vel_y += GRAVIDADE;
+            if (jogador->mov.vel_y > MAX_QUEDA) jogador->mov.vel_y = MAX_QUEDA;
 
-            float novo_y = jogador->y + jogador->vel_y;
+            float novo_y = jogador->mov.y + jogador->mov.vel_y;
 
-            if (!colide_mapa(mapa, jogador->x, novo_y)) {
-                jogador->y = novo_y;
+            if (!colide_mapa(mapa, jogador->mov.x, novo_y)) {
+                jogador->mov.y = novo_y;
             } else {
-                if (jogador->vel_y > 0) {
-                    while (!colide_mapa(mapa, jogador->x, jogador->y + 1)) jogador->y++;
-                } else if (jogador->vel_y < 0) {
-                    while (!colide_mapa(mapa, jogador->x, jogador->y - 1)) jogador->y--;
+                if (jogador->mov.vel_y > 0) {
+                    while (!colide_mapa(mapa, jogador->mov.x, jogador->mov.y + 1)) jogador->mov.y++;
+                } else if (jogador->mov.vel_y < 0) {
+                    while (!colide_mapa(mapa, jogador->mov.x, jogador->mov.y - 1)) jogador->mov.y--;
                 }
-                jogador->vel_y = 0;
+                jogador->mov.vel_y = 0;
             }
 
-            jogador->no_chao = esta_no_chao(mapa, jogador->x, jogador->y);
+            jogador->no_chao = esta_no_chao(mapa, jogador->mov.x, jogador->mov.y);
 
-            float draw_x = jogador->x - HITBOX_OFFSET_X;
-            float draw_y = jogador->y - HITBOX_OFFSET_Y;
+            float draw_x = jogador->mov.x - HITBOX_OFFSET_X;
+            float draw_y = jogador->mov.y - HITBOX_OFFSET_Y;
 
             al_clear_to_color(al_map_rgb(255,255,255));
             al_draw_bitmap(bg, 0, 0, 0);
