@@ -10,17 +10,14 @@
 #define ALTURA 1080
 #define FPS 60
 
-// tamanho original do sprite
 #define SPRITE_SRC_W 96
 #define SPRITE_SRC_H 84
 
-// ESCALA
 #define SPRITE_SCALE 1.95f
 
 #define DRAW_W (SPRITE_SRC_W * SPRITE_SCALE)
 #define DRAW_H (SPRITE_SRC_H * SPRITE_SCALE)
 
-// hitbox proporcional 
 #define HITBOX_W 35
 #define HITBOX_H 80
 
@@ -47,7 +44,6 @@ typedef struct {
     int movendo;
 } Jogador;
 
-// PRETO = solido
 bool pixel_solido(ALLEGRO_BITMAP *mapa, int x, int y) {
     if (x < 0 || y < 0 || x >= al_get_bitmap_width(mapa) || y >= al_get_bitmap_height(mapa))
         return true;
