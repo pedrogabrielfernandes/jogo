@@ -29,6 +29,12 @@
 #define FORCA_PULO -15.05f
 #define MAX_QUEDA 18.0f
 
+typedef enum {
+    IDLE,
+    RUN,
+    JUMP
+} Estado;
+
 typedef struct {
     float x;
     float y;
@@ -42,6 +48,8 @@ typedef struct {
     int no_chao;
     int direcao;
     int movendo;
+
+    Estado estado;
 } Jogador;
 
 bool pixel_solido(ALLEGRO_BITMAP *mapa, int x, int y) {
@@ -106,21 +114,23 @@ int main() {
         return 1;
     }
 
-Jogador *jogador = malloc(sizeof(Jogador));
+    Jogador *jogador = malloc(sizeof(Jogador));
 
-if (jogador == NULL) {
-    printf("Erro ao alocar memoria\n");
-    return 1;
-}
+    if (jogador == NULL) {
+        printf("Erro ao alocar memoria\n");
+        return 1;
+    }
 
-jogador->mov.x = 60;
-jogador->mov.y = 253;
-jogador->mov.vel_y = 0;
-jogador->frame = 0;
+    jogador->estado = IDLE;
 
-jogador->no_chao = 0;
-jogador->direcao = 0;
-jogador->movendo = 0;
+    jogador->mov.x = 60;
+    jogador->mov.y = 253;
+    jogador->mov.vel_y = 0;
+
+    jogador->frame = 0;
+    jogador->no_chao = 0;
+    jogador->direcao = 0;
+    jogador->movendo = 0;
 
     ALLEGRO_EVENT ev;
     ALLEGRO_KEYBOARD_STATE state;
@@ -141,8 +151,9 @@ jogador->movendo = 0;
 
             al_get_keyboard_state(&state);
 
-            jogador->no_chao = esta_no_chao(mapa, jogador->mov.x, jogador->mov.y);
-
+            // =========================
+            // MOVIMENTO HORIZONTAL
+            // =========================
             float novo_x = jogador->mov.x;
 
             if (al_key_down(&state, ALLEGRO_KEY_D)) {
@@ -161,6 +172,11 @@ jogador->movendo = 0;
                 jogador->mov.x = novo_x;
             }
 
+            // =========================
+            // GRAVIDADE / PULO
+            // =========================
+            jogador->no_chao = esta_no_chao(mapa, jogador->mov.x, jogador->mov.y);
+
             if (al_key_down(&state, ALLEGRO_KEY_W) && jogador->no_chao) {
                 jogador->mov.vel_y = FORCA_PULO;
             }
@@ -174,14 +190,27 @@ jogador->movendo = 0;
                 jogador->mov.y = novo_y;
             } else {
                 if (jogador->mov.vel_y > 0) {
-                    while (!colide_mapa(mapa, jogador->mov.x, jogador->mov.y + 1)) jogador->mov.y++;
+                    while (!colide_mapa(mapa, jogador->mov.x, jogador->mov.y + 1))
+                        jogador->mov.y++;
                 } else if (jogador->mov.vel_y < 0) {
-                    while (!colide_mapa(mapa, jogador->mov.x, jogador->mov.y - 1)) jogador->mov.y--;
+                    while (!colide_mapa(mapa, jogador->mov.x, jogador->mov.y - 1))
+                        jogador->mov.y--;
                 }
                 jogador->mov.vel_y = 0;
             }
 
             jogador->no_chao = esta_no_chao(mapa, jogador->mov.x, jogador->mov.y);
+
+            // =========================
+            // ENUM (CORRETO AGORA)
+            // =========================
+            if (!jogador->no_chao) {
+                jogador->estado = JUMP;
+            } else if (jogador->movendo) {
+                jogador->estado = RUN;
+            } else {
+                jogador->estado = IDLE;
+            }
 
             float draw_x = jogador->mov.x - HITBOX_OFFSET_X;
             float draw_y = jogador->mov.y - HITBOX_OFFSET_Y;
@@ -189,20 +218,38 @@ jogador->movendo = 0;
             al_clear_to_color(al_map_rgb(255,255,255));
             al_draw_bitmap(bg, 0, 0, 0);
 
-            if (!jogador->no_chao) {
-                if (jogador->frame >= 5) jogador->frame = 0;
-                al_draw_scaled_bitmap(jump, 96*(int)jogador->frame, 0, 96, 84, draw_x, draw_y, DRAW_W, DRAW_H, jogador->direcao);
-            } else if (jogador->movendo) {
-                if (jogador->frame >= 8) jogador->frame = 0;
-                al_draw_scaled_bitmap(run, 96*(int)jogador->frame, 0, 96, 84, draw_x, draw_y, DRAW_W, DRAW_H, jogador->direcao);
-            } else {
-                if (jogador->frame >= 7) jogador->frame = 0;
-                al_draw_scaled_bitmap(idle, 96*(int)jogador->frame, 0, 96, 84, draw_x, draw_y, DRAW_W, DRAW_H, jogador->direcao);
+            switch (jogador->estado) {
+
+                case JUMP:
+                    if (jogador->frame >= 5) jogador->frame = 0;
+                    al_draw_scaled_bitmap(jump,
+                        96*(int)jogador->frame, 0, 96, 84,
+                        draw_x, draw_y, DRAW_W, DRAW_H,
+                        jogador->direcao);
+                    break;
+
+                case RUN:
+                    if (jogador->frame >= 8) jogador->frame = 0;
+                    al_draw_scaled_bitmap(run,
+                        96*(int)jogador->frame, 0, 96, 84,
+                        draw_x, draw_y, DRAW_W, DRAW_H,
+                        jogador->direcao);
+                    break;
+
+                case IDLE:
+                default:
+                    if (jogador->frame >= 7) jogador->frame = 0;
+                    al_draw_scaled_bitmap(idle,
+                        96*(int)jogador->frame, 0, 96, 84,
+                        draw_x, draw_y, DRAW_W, DRAW_H,
+                        jogador->direcao);
+                    break;
             }
 
             al_flip_display();
         }
     }
+
     al_destroy_bitmap(bg);
     al_destroy_bitmap(mapa);
     al_destroy_bitmap(idle);
@@ -211,6 +258,7 @@ jogador->movendo = 0;
     al_destroy_timer(timer);
     al_destroy_event_queue(queue);
     al_destroy_display(display);
+
     free(jogador);
     return 0;
 }
