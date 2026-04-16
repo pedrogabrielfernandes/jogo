@@ -82,8 +82,8 @@ int main() {
     al_register_event_source(queue, al_get_timer_event_source(timer));
     al_register_event_source(queue, al_get_keyboard_event_source());
 
-    ALLEGRO_BITMAP *bg   = al_load_bitmap("assets/cenarios/background2.png");
-    ALLEGRO_BITMAP *mapa = al_load_bitmap("assets/cenarios/colisao2.png");
+    ALLEGRO_BITMAP *bg   = al_load_bitmap("assets/cenarios/background4.png");
+    ALLEGRO_BITMAP *mapa = al_load_bitmap("assets/cenarios/colisao4.png");
 
     ALLEGRO_BITMAP *idle = al_load_bitmap("assets/sprites/IDLE.png");
     ALLEGRO_BITMAP *run  = al_load_bitmap("assets/sprites/RUN.png");
