@@ -328,6 +328,9 @@ int main(void) {
                 if (jogador->frame >= FRAMES_IDLE) jogador->frame = 0;
                 al_draw_scaled_bitmap(idle, 96 * (int)jogador->frame, 0, 96, 84, draw_x, draw_y, DRAW_W, DRAW_H, jogador->direcao);
             }
+            char texto[50];
+            sprintf(texto, "Tempo: %.2f s", tempo.atual);
+            al_draw_text(fonte, al_map_rgb(0,0,0), 20, 20, 0, texto);
 
             al_flip_display();
         }
