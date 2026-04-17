@@ -24,7 +24,7 @@ O projeto tem como finalidade aplicar, na prática, conceitos fundamentais da pr
 ## 👥 Componentes
 
 - Matheus Almeida Rigueira  
-- Samoel Levi de Lima Lopes  
+- Samuel Levi de Lima Lopes  
 - Pedro Gabriel Alves Fernandes  
 - José Vitor do Nascimento Duarte Bezerra  
 
