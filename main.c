@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define LARGURA 1920
 #define ALTURA  1080
@@ -238,6 +239,8 @@ int main(void) {
 
     int rodando = 1;
 
+    char mensagem_final[100] = "";
+
     ALLEGRO_EVENT ev;
     ALLEGRO_KEYBOARD_STATE state;
 
@@ -313,6 +316,20 @@ int main(void) {
                 tempo.fim   = al_get_time();
                 tempo.atual = tempo.fim - tempo.inicio;
                 tempo.ativo = 0;
+
+                char temp_str[50];
+                
+                strcpy(temp_str, "Fim de Jogo!");
+                
+                if (strcmp(temp_str, "Fim de Jogo!") == 0) {
+                    // Concatenação (strcat)
+                    strcat(temp_str, " Parabens!");
+                }
+                
+                strcpy(mensagem_final, temp_str);
+                
+                int tamanho_msg = strlen(mensagem_final);
+                printf("Tamanho da string gerada: %d caracteres.\n", tamanho_msg);
             }
 
             float draw_x = jogador->mov.x - HITBOX_OFFSET_X;
@@ -335,6 +352,10 @@ int main(void) {
             sprintf(texto, "Tempo: %.2f s", tempo.atual);
             al_draw_text(fonte, al_map_rgb(0,0,0), 20, 20, 0, texto);
 
+            if (!tempo.ativo) {
+                al_draw_text(fonte, al_map_rgb(255,215,0), LARGURA / 2.0, ALTURA / 3.0, ALLEGRO_ALIGN_CENTER, mensagem_final);
+            }
+
             al_flip_display();
         }
     }
@@ -353,4 +374,3 @@ int main(void) {
 
     return 0;
 }
-//quero morrer
