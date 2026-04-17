@@ -1,3 +1,4 @@
+#include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_font.h>
@@ -32,6 +33,8 @@
 #define FRAMES_RUN  8
 #define FRAMES_JUMP 5
 
+#define MAX_VIDAS 5
+
 typedef struct {
     float x;
     float y;
@@ -55,12 +58,13 @@ typedef struct {
 
 typedef enum {
     MENU_JOGAR = 0,
-    MENU_SAIR = 1
+    MENU_SAIR  = 1
 } OpcaoMenu;
 
 OpcaoMenu executar_menu(ALLEGRO_EVENT_QUEUE *queue,
-                  ALLEGRO_BITMAP *bg_menu,
-                  ALLEGRO_FONT *fonte)
+                        ALLEGRO_TIMER *timer,
+                        ALLEGRO_BITMAP *bg_menu,
+                        ALLEGRO_FONT *fonte)
 {
     ALLEGRO_EVENT ev;
     OpcaoMenu opcao = MENU_JOGAR;
@@ -89,36 +93,25 @@ OpcaoMenu executar_menu(ALLEGRO_EVENT_QUEUE *queue,
 
         if (ev.type == ALLEGRO_EVENT_TIMER)
         {
-            char jogar[50];
-            char sair[50];
+            const char *jogar = (opcao == MENU_JOGAR) ? "> JOGAR <" : "JOGAR";
+            const char *sair  = (opcao == MENU_SAIR)  ? "> SAIR <"  : "SAIR";
 
-            if (opcao == MENU_JOGAR)
-            {
-                sprintf(jogar, "> JOGAR <");
-                sprintf(sair, "SAIR");
-            }
-            else
-            {
-                sprintf(jogar, "JOGAR");
-                sprintf(sair, "> SAIR <");
-            }
-
-            al_clear_to_color(al_map_rgb(0,0,0));
+            al_clear_to_color(al_map_rgb(0, 0, 0));
 
             al_draw_scaled_bitmap(
                 bg_menu,
-                0,0,
+                0, 0,
                 al_get_bitmap_width(bg_menu),
                 al_get_bitmap_height(bg_menu),
-                0,0,
-                LARGURA,ALTURA,
+                0, 0,
+                LARGURA, ALTURA,
                 0
             );
 
             al_draw_text(
                 fonte,
                 al_map_rgb(255,255,255),
-                LARGURA/2.4,
+                LARGURA / 2.4,
                 990,
                 ALLEGRO_ALIGN_CENTER,
                 jogar
@@ -127,7 +120,7 @@ OpcaoMenu executar_menu(ALLEGRO_EVENT_QUEUE *queue,
             al_draw_text(
                 fonte,
                 al_map_rgb(255,255,255),
-                LARGURA/1.6,
+                LARGURA / 1.6,
                 990,
                 ALLEGRO_ALIGN_CENTER,
                 sair
@@ -138,7 +131,8 @@ OpcaoMenu executar_menu(ALLEGRO_EVENT_QUEUE *queue,
     }
 }
 
-bool pixel_solido(ALLEGRO_BITMAP *mapa, int x, int y) {
+bool pixel_solido(ALLEGRO_BITMAP *mapa, int x, int y)
+{
     if (x < 0 || y < 0 ||
         x >= al_get_bitmap_width(mapa) ||
         y >= al_get_bitmap_height(mapa))
@@ -147,10 +141,12 @@ bool pixel_solido(ALLEGRO_BITMAP *mapa, int x, int y) {
     ALLEGRO_COLOR cor = al_get_pixel(mapa, x, y);
     unsigned char r, g, b;
     al_unmap_rgb(cor, &r, &g, &b);
+
     return (r < 50 && g < 50 && b < 50);
 }
 
-bool colide_mapa(ALLEGRO_BITMAP *mapa, float x, float y) {
+bool colide_mapa(ALLEGRO_BITMAP *mapa, float x, float y)
+{
     int left   = (int)x;
     int right  = (int)x + HITBOX_W - 1;
     int top    = (int)y;
@@ -162,7 +158,8 @@ bool colide_mapa(ALLEGRO_BITMAP *mapa, float x, float y) {
            pixel_solido(mapa, right, bottom);
 }
 
-bool esta_no_chao(ALLEGRO_BITMAP *mapa, float x, float y) {
+bool esta_no_chao(ALLEGRO_BITMAP *mapa, float x, float y)
+{
     int left  = (int)x + 4;
     int right = (int)x + HITBOX_W - 4;
     int foot  = (int)y + HITBOX_H;
@@ -171,65 +168,122 @@ bool esta_no_chao(ALLEGRO_BITMAP *mapa, float x, float y) {
            pixel_solido(mapa, right, foot);
 }
 
-int main(void) {
+void desenhar_vidas(int vida[], ALLEGRO_BITMAP *coracao)
+{
+    for(int i = 0; i < MAX_VIDAS; i++)
+    {
+        float x = 20 + i * 60;
+        float y = 80;
 
-    if (!al_init())             { printf("Erro: al_init\n");             return 1; }
-    if (!al_install_keyboard()) { printf("Erro: al_install_keyboard\n"); return 1; }
-    if (!al_init_image_addon()) { printf("Erro: al_init_image_addon\n"); return 1; }
+        if(vida[i] == 1)
+            al_draw_bitmap(coracao, x, y, 0);
+        else
+            al_draw_tinted_bitmap(coracao, al_map_rgba(100,100,100,120), x, y, 0);
+    }
+}
+
+void perder_vida(int vida[])
+{
+    for(int i = MAX_VIDAS - 1; i >= 0; i--)
+    {
+        if(vida[i] == 1)
+        {
+            vida[i] = 0;
+            break;
+        }
+    }
+}
+
+int main(void)
+{
+    if (!al_init()) {
+        printf("Erro: al_init\n");
+        return 1;
+    }
+
+    if (!al_init_primitives_addon()) {
+    printf("Erro: al_init_primitives_addon\n");
+    return 1;
+    }
+
+    if (!al_install_keyboard()) {
+        printf("Erro: al_install_keyboard\n");
+        return 1;
+    }
+
+    if (!al_init_image_addon()) {
+        printf("Erro: al_init_image_addon\n");
+        return 1;
+    }
 
     al_init_font_addon();
     al_init_ttf_addon();
 
     ALLEGRO_DISPLAY *display = al_create_display(LARGURA, ALTURA);
-    if (!display) { printf("Erro: al_create_display\n"); return 1; }
+    if (!display) {
+        printf("Erro: al_create_display\n");
+        return 1;
+    }
+
+    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
+    if (!queue) {
+        printf("Erro: al_create_event_queue\n");
+        return 1;
+    }
+
+    ALLEGRO_TIMER *timer = al_create_timer(1.0 / FPS);
+    if (!timer) {
+        printf("Erro: al_create_timer\n");
+        return 1;
+    }
 
     ALLEGRO_FONT *fonte = al_load_ttf_font("assets/arial.ttf", 48, 0);
-    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-    ALLEGRO_TIMER       *timer = al_create_timer(1.0 / FPS);
-
-    if (!queue || !timer) { printf("Erro: queue ou timer\n"); return 1; }
+    if (!fonte) {
+        printf("Erro ao carregar fonte: assets/arial.ttf\n");
+        fonte = al_create_builtin_font();
+        if (!fonte) return 1;
+    }
 
     al_register_event_source(queue, al_get_display_event_source(display));
     al_register_event_source(queue, al_get_timer_event_source(timer));
     al_register_event_source(queue, al_get_keyboard_event_source());
-    
-    ALLEGRO_BITMAP *bg_menu =
-        al_load_bitmap("assets/cenarios/background1.png");
+
+    ALLEGRO_BITMAP *bg_menu = al_load_bitmap("assets/cenarios/background1.png");
+    if (!bg_menu) {
+        printf("Erro ao carregar background do menu\n");
+        return 1;
+    }
 
     al_start_timer(timer);
 
-    OpcaoMenu escolha = executar_menu(queue, bg_menu, fonte);
+    OpcaoMenu escolha = executar_menu(queue, timer, bg_menu, fonte);
 
-    if (escolha == MENU_SAIR)
+    if (escolha == MENU_SAIR) {
         return 0;
+    }
 
-    ALLEGRO_BITMAP *bg   = al_load_bitmap("assets/cenarios/background2.png");
-    ALLEGRO_BITMAP *mapa = al_load_bitmap("assets/cenarios/colisao2.png");
+    al_flush_event_queue(queue);
+
+    ALLEGRO_BITMAP *bg   = al_load_bitmap("assets/cenarios/background4.png");
+    ALLEGRO_BITMAP *mapa = al_load_bitmap("assets/cenarios/colisao4.png");
     ALLEGRO_BITMAP *idle = al_load_bitmap("assets/sprites/IDLE.png");
     ALLEGRO_BITMAP *run  = al_load_bitmap("assets/sprites/RUN.png");
     ALLEGRO_BITMAP *jump = al_load_bitmap("assets/sprites/JUMP.png");
+    ALLEGRO_BITMAP *coracao = al_load_bitmap("assets/itens/vida.png");
 
-
-    if (!bg || !mapa || !idle || !run || !jump) {
-        printf("Erro ao carregar bitmaps\n");
+    if (!bg || !mapa || !idle || !run || !jump || !coracao) {
+        printf("Erro ao carregar bitmaps do jogo\n");
         return 1;
     }
 
-    if (!fonte) {
-        printf("Erro ao carregar fonte\n");
-        return 1;
-    }
-
-    Jogador *jogador = malloc(sizeof(Jogador));
-    if (!jogador) { printf("Erro ao alocar memoria\n"); return 1; }
-
-    jogador->mov.x     = 60;
-    jogador->mov.y     = 253;
-    jogador->mov.vel_y = 0;
-    jogador->frame     = 0;
-    jogador->no_chao   = 0;
-    jogador->direcao   = 0;
-    jogador->movendo   = 0;
+    Jogador jogador;
+    jogador.mov.x     = 60;
+    jogador.mov.y     = 253;
+    jogador.mov.vel_y = 0;
+    jogador.frame     = 0;
+    jogador.no_chao   = 0;
+    jogador.direcao   = 0;
+    jogador.movendo   = 0;
 
     Temporizador tempo;
     tempo.inicio = al_get_time();
@@ -237,136 +291,135 @@ int main(void) {
     tempo.fim    = 0;
     tempo.ativo  = 1;
 
-    int rodando = 1;
-
     char mensagem_final[100] = "";
 
+    int vida[MAX_VIDAS];
+    for(int i = 0; i < MAX_VIDAS; i++)
+        vida[i] = 1;
+
+    int rodando = 1;
     ALLEGRO_EVENT ev;
     ALLEGRO_KEYBOARD_STATE state;
 
-    al_start_timer(timer);
-
-    while (rodando) {
-
+    while (rodando)
+    {
         al_wait_for_event(queue, &ev);
 
         if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
             rodando = 0;
 
-        if (ev.type == ALLEGRO_EVENT_TIMER) {
-
-            jogador->frame  += 0.15f;
-            jogador->movendo = 0;
+        if (ev.type == ALLEGRO_EVENT_TIMER)
+        {
+            jogador.frame += 0.15f;
+            jogador.movendo = 0;
 
             al_get_keyboard_state(&state);
 
             if (tempo.ativo)
                 tempo.atual = al_get_time() - tempo.inicio;
 
-            jogador->no_chao = esta_no_chao(mapa, jogador->mov.x, jogador->mov.y);
+            jogador.no_chao = esta_no_chao(mapa, jogador.mov.x, jogador.mov.y);
 
-            float novo_x = jogador->mov.x;
+            float novo_x = jogador.mov.x;
 
             if (al_key_down(&state, ALLEGRO_KEY_D)) {
                 novo_x += VELOCIDADE;
-                jogador->direcao = 0;
-                jogador->movendo = 1;
+                jogador.direcao = 0;
+                jogador.movendo = 1;
             }
 
             if (al_key_down(&state, ALLEGRO_KEY_A)) {
                 novo_x -= VELOCIDADE;
-                jogador->direcao = ALLEGRO_FLIP_HORIZONTAL;
-                jogador->movendo = 1;
+                jogador.direcao = ALLEGRO_FLIP_HORIZONTAL;
+                jogador.movendo = 1;
             }
 
-            if (!colide_mapa(mapa, novo_x, jogador->mov.y))
-                jogador->mov.x = novo_x;
+            if (!colide_mapa(mapa, novo_x, jogador.mov.y))
+                jogador.mov.x = novo_x;
 
-            if (al_key_down(&state, ALLEGRO_KEY_W) && jogador->no_chao)
-                jogador->mov.vel_y = FORCA_PULO;
+            if (al_key_down(&state, ALLEGRO_KEY_W) && jogador.no_chao)
+                jogador.mov.vel_y = FORCA_PULO;
 
-            jogador->mov.vel_y += GRAVIDADE;
-            if (jogador->mov.vel_y > MAX_QUEDA)
-                jogador->mov.vel_y = MAX_QUEDA;
+            jogador.mov.vel_y += GRAVIDADE;
 
-            float novo_y = jogador->mov.y + jogador->mov.vel_y;
+            if (jogador.mov.vel_y > MAX_QUEDA)
+                jogador.mov.vel_y = MAX_QUEDA;
 
-            if (!colide_mapa(mapa, jogador->mov.x, novo_y)) {
-                jogador->mov.y = novo_y;
+            float novo_y = jogador.mov.y + jogador.mov.vel_y;
+
+            if (!colide_mapa(mapa, jogador.mov.x, novo_y)) {
+                jogador.mov.y = novo_y;
             } else {
-                if (jogador->mov.vel_y > 0) {
-                    int limite = 0;
-                    while (!colide_mapa(mapa, jogador->mov.x, jogador->mov.y + 1) && limite < 10) {
-                        jogador->mov.y++;
-                        limite++;
-                    }
-                } else if (jogador->mov.vel_y < 0) {
-                    int limite = 0;
-                    while (!colide_mapa(mapa, jogador->mov.x, jogador->mov.y - 1) && limite < 10) {
-                        jogador->mov.y--;
-                        limite++;
-                    }
-                }
-                jogador->mov.vel_y = 0;
+                jogador.mov.vel_y = 0;
             }
 
-            jogador->no_chao = esta_no_chao(mapa, jogador->mov.x, jogador->mov.y);
+            jogador.no_chao = esta_no_chao(mapa, jogador.mov.x, jogador.mov.y);
 
-            if (jogador->mov.x > 1800 && tempo.ativo) {
+            if (jogador.mov.y > ALTURA + 200)
+            {
+                perder_vida(vida);
+                jogador.mov.x = 60;
+                jogador.mov.y = 253;
+                jogador.mov.vel_y = 0;
+            }
+
+            if (jogador.mov.x > 2400 && tempo.ativo)
+            {
                 tempo.fim   = al_get_time();
                 tempo.atual = tempo.fim - tempo.inicio;
                 tempo.ativo = 0;
 
-                char temp_str[50];
-                
-                strcpy(temp_str, "Fim de Jogo!");
-                
-                if (strcmp(temp_str, "Fim de Jogo!") == 0) {
-                    // Concatenação (strcat)
-                    strcat(temp_str, " Parabens!");
-                }
-                
-                strcpy(mensagem_final, temp_str);
-                
-                int tamanho_msg = strlen(mensagem_final);
-                printf("Tamanho da string gerada: %d caracteres.\n", tamanho_msg);
             }
 
-            float draw_x = jogador->mov.x - HITBOX_OFFSET_X;
-            float draw_y = jogador->mov.y - HITBOX_OFFSET_Y;
+            float draw_x = jogador.mov.x - HITBOX_OFFSET_X;
+            float draw_y = jogador.mov.y - HITBOX_OFFSET_Y;
 
             al_clear_to_color(al_map_rgb(255, 255, 255));
             al_draw_bitmap(bg, 0, 0, 0);
 
-            if (!jogador->no_chao) {
-                if (jogador->frame >= FRAMES_JUMP) jogador->frame = 0;
-                al_draw_scaled_bitmap(jump, 96 * (int)jogador->frame, 0, 96, 84, draw_x, draw_y, DRAW_W, DRAW_H, jogador->direcao);
-            } else if (jogador->movendo) {
-                if (jogador->frame >= FRAMES_RUN) jogador->frame = 0;
-                al_draw_scaled_bitmap(run, 96 * (int)jogador->frame, 0, 96, 84, draw_x, draw_y, DRAW_W, DRAW_H, jogador->direcao);
-            } else {
-                if (jogador->frame >= FRAMES_IDLE) jogador->frame = 0;
-                al_draw_scaled_bitmap(idle, 96 * (int)jogador->frame, 0, 96, 84, draw_x, draw_y, DRAW_W, DRAW_H, jogador->direcao);
+            if (!jogador.no_chao) {
+                if (jogador.frame >= FRAMES_JUMP) jogador.frame = 0;
+                al_draw_scaled_bitmap(jump, 96 * (int)jogador.frame, 0, 96, 84,
+                                      draw_x, draw_y, DRAW_W, DRAW_H, jogador.direcao);
             }
+            else if (jogador.movendo) {
+                if (jogador.frame >= FRAMES_RUN) jogador.frame = 0;
+                al_draw_scaled_bitmap(run, 96 * (int)jogador.frame, 0, 96, 84,
+                                      draw_x, draw_y, DRAW_W, DRAW_H, jogador.direcao);
+            }
+            else {
+                if (jogador.frame >= FRAMES_IDLE) jogador.frame = 0;
+                al_draw_scaled_bitmap(idle, 96 * (int)jogador.frame, 0, 96, 84,
+                                      draw_x, draw_y, DRAW_W, DRAW_H, jogador.direcao);
+            }
+
             char texto[50];
             sprintf(texto, "Tempo: %.2f s", tempo.atual);
+
+            al_draw_filled_rectangle(10, 10, 340, 70, al_map_rgb(255,255,255));
             al_draw_text(fonte, al_map_rgb(0,0,0), 20, 20, 0, texto);
 
+            desenhar_vidas(vida, coracao);
+
             if (!tempo.ativo) {
-                al_draw_text(fonte, al_map_rgb(255,215,0), LARGURA / 2.0, ALTURA / 3.0, ALLEGRO_ALIGN_CENTER, mensagem_final);
+                al_draw_text(fonte, al_map_rgb(255,215,0),
+                             LARGURA / 2.0, ALTURA / 3.0,
+                             ALLEGRO_ALIGN_CENTER,
+                             mensagem_final);
             }
 
             al_flip_display();
         }
     }
 
-    free(jogador);
-
+    al_destroy_bitmap(bg_menu);
     al_destroy_bitmap(bg);
     al_destroy_bitmap(mapa);
     al_destroy_bitmap(idle);
     al_destroy_bitmap(run);
     al_destroy_bitmap(jump);
+    al_destroy_bitmap(coracao);
+
     al_destroy_font(fonte);
     al_destroy_timer(timer);
     al_destroy_event_queue(queue);
