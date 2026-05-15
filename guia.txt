@@ -27,4 +27,4 @@
     gcc main.c -o teste $(pkg-config --cflags --libs allegro-5 allegro_font-5 allegro_ttf-5 allegro_image-5) -> compilar o codigo atualizado
     ./teste -> executar o codigo atualizado
 
-    Novo código compilador universal -> gcc main.c -o jogo $(pkg-config --cflags --libs allegro-5 allegro_font-5 allegro_ttf-5 allegro_image-5 allegro_primitives-5)
+    Novo código compilador universal -> gcc main.c -o teste -lallegro -lallegro_main -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitivesgit
