@@ -1,4 +1,4 @@
-.vscode\
+*.vscode/
 teste
 a.out
 *.exe
