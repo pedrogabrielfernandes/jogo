@@ -1,30 +1,15 @@
+CODIGO PARA COMPILAR UNIVERSAL
+gcc main.c -o teste -lallegro -lallegro_main -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives
 
-    (Linux) -> sudo "..." github-cli
-    (Linux) -> gh auth login - faz o login
-    (Linux) -> git clone https://github.com/pedrogabrielfernandes/jogo
-    (Linux) -> cd jogo/ - na pasta "jogo"
-    
-    *Comando Universal ->
-    gcc main.c -o teste -lallegro -lallegro_main -lallegro_ttf -lallegro_font -lallegro_image -> compilar o codigo
-    ./teste -> executa o codigo
-    
-    após cada alteração que fizerem dê ctrl+s atualizem o repositório do github, exemplo:
-    
-    git add .
-    git commit -m "o que você alterou"
-    git push
-    
-    logo após atualize seu repositorio e atualize o seu gitclone
+ANTES DE QUALQUER ALTERAÇÃO:
+(guarda suas alterações temporariamente)
+git stash
+(atualiza o projeto)
+git pull
+(devolve suas alterações pro projeto atualizado)
+git stash pop
 
-    USE ISSO PARA SEMPRE ESTAR ATUALIZADO E MANDAR AS ATUALIZAÇÕES CORRETAMENTE
-    git pull   # pega atualizações
-    # trabalha no código
-    git add .
-    git commit -m "mensagem"
-    git push   # envia pro GitHub
-    
-    *Atualizou ->
-    gcc main.c -o teste $(pkg-config --cflags --libs allegro-5 allegro_font-5 allegro_ttf-5 allegro_image-5) -> compilar o codigo atualizado
-    ./teste -> executar o codigo atualizado
-
-    Novo código compilador universal -> gcc main.c -o teste -lallegro -lallegro_main -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitivesgit
+SE QUISER ATUALIZAR OS PROJETOS COM SUAS ALTERAÇÕES: (apos o git stash)
+git add .
+git commit -m "o que você alterou"
+git push
