@@ -103,6 +103,8 @@ typedef struct
     double atual;
     double fim;
     int ativo;
+    float ranking[10];
+    int quantidade_scores;
 } Temporizador;
 
 typedef enum
@@ -293,6 +295,50 @@ void gerar_mapa_colisao(ALLEGRO_BITMAP *mapa)
     al_unlock_bitmap(mapa);
 }
 
+void ordenar_ranking(float ranking[], int tamanho)
+{
+    for (int i = 0; i < tamanho - 1; i++)
+    {
+        for (int j = 0; j < tamanho - i - 1; j++)
+        {
+            if (ranking[j] > ranking[j + 1])
+            {
+                float temp = ranking[j];
+                ranking[j] = ranking[j + 1];
+                ranking[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void carregar_ranking(Temporizador *tempo)
+{
+    FILE *file = fopen("ranking.txt", "r");
+    if (!file)
+        return;
+
+    while (fscanf(file, "%f", &tempo->ranking[tempo->quantidade_scores]) == 1)
+    {
+        tempo->quantidade_scores++;
+        if (tempo->quantidade_scores >= 10)
+            break;
+    }
+    fclose(file);
+}
+
+void salvar_ranking(Temporizador *tempo)
+{
+    FILE *file = fopen("ranking.txt", "w");
+    if (!file)
+        return;
+
+    for (int i = 0; i < tempo->quantidade_scores; i++)
+    {
+        fprintf(file, "%.2f\n", tempo->ranking[i]);
+    }
+    fclose(file);
+}
+
 int main(void)
 {
     srand(time(NULL));
@@ -415,13 +461,18 @@ int main(void)
     zumbi.frame = 0;
     zumbi.vida = 100;
 
+
+
     Temporizador tempo;
     tempo.inicio = al_get_time();
     tempo.atual = 0;
     tempo.fim = 0;
     tempo.ativo = 1;
 
-    char mensagem_final[100] = "";
+    tempo.quantidade_scores = 0;
+    carregar_ranking(&tempo);
+
+    char mensagem_final[100] = "Fase Concluída!";
 
     VidaStatus *vetor_vidas = (VidaStatus *)malloc(MAX_VIDAS * sizeof(VidaStatus));
     for (int i = 0; i < MAX_VIDAS; i++)
@@ -451,6 +502,17 @@ int main(void)
             jogador.movendo = 0;
 
             al_get_keyboard_state(&state);
+
+            static int key_r_anterior = 0;
+
+            int key_r_atual =
+                al_key_down(&state, ALLEGRO_KEY_R);
+
+            if (key_r_atual && !key_r_anterior)
+            {
+                jogador.mov.x = 2500;
+            }
+            key_r_anterior = key_r_atual;
 
             static int key_k_anterior = 0;
 
@@ -659,11 +721,23 @@ int main(void)
                 tempo.fim = al_get_time();
                 tempo.atual = tempo.fim - tempo.inicio;
                 tempo.ativo = 0;
-            }
 
-            // =========================
-            // DESENHO
-            // =========================
+                if (tempo.quantidade_scores < 10)
+                {
+                    tempo.ranking[tempo.quantidade_scores] = tempo.atual;
+                    tempo.quantidade_scores++;
+                }
+                else
+                {
+                    ordenar_ranking(tempo.ranking, 10);
+                    if (tempo.atual < tempo.ranking[9])
+                    {
+                        tempo.ranking[9] = tempo.atual;
+                    }
+                }
+                ordenar_ranking(tempo.ranking, tempo.quantidade_scores);
+                salvar_ranking(&tempo);
+            }
 
             float draw_x = jogador.mov.x - HITBOX_OFFSET_X;
             float draw_y = jogador.mov.y - HITBOX_OFFSET_Y;
@@ -751,7 +825,7 @@ int main(void)
                 else
                     atk = ataque3;
 
-                
+
                 float atk_draw_x = draw_x - 10;
                 float atk_draw_y = draw_y - 40;
 
@@ -835,6 +909,29 @@ int main(void)
                 10, 10,
                 340, 70,
                 al_map_rgb(255, 255, 255));
+
+            al_draw_text(
+                fonte,
+                al_map_rgb(255, 215, 0),
+                1850,
+                0,
+                ALLEGRO_ALIGN_RIGHT,
+                "RANKING"
+            );
+
+            for (int i = 0; i < tempo.quantidade_scores; i++)
+            {
+                char texto_rank[50];
+                sprintf(texto_rank, "%d. %.2f s", i + 1, tempo.ranking[i]);
+                al_draw_text(
+                    fonte,
+                    al_map_rgb(255, 255, 255),
+                    1850,
+                    40 + i * 45,
+                    ALLEGRO_ALIGN_RIGHT,
+                    texto_rank
+                );
+            }
 
             al_draw_text(
                 fonte,
