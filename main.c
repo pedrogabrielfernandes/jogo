@@ -35,6 +35,16 @@
 #define FRAMES_JUMP 12
 
 #define MAX_VIDAS 5
+#define FRAMES_ZUMBI 8
+
+#define ATTACK_DRAW_W DRAW_W
+#define ATTACK_DRAW_H DRAW_H
+
+#define ZUMBI_DRAW_W 180
+#define ZUMBI_DRAW_H 180
+
+#define ZUMBI_OFFSET_X 50
+#define ZUMBI_OFFSET_Y 169
 
 unsigned char colisao[ALTURA][3000];
 
@@ -54,10 +64,20 @@ typedef struct
 typedef struct
 {
     Movimento mov;
+
     float frame;
+    float frame_ataque;
+
     int no_chao;
     int direcao;
     int movendo;
+
+    // ATTACK
+    int atacando;
+    int tipo_ataque;
+
+    double ultimo_dano;
+
 } Jogador;
 
 typedef struct
@@ -68,6 +88,7 @@ typedef struct
     int direcao;
     int vivo;
     float frame;
+    int vida;
 } Inimigo;
 
 typedef struct
@@ -334,7 +355,7 @@ int main(void)
     al_register_event_source(queue, al_get_timer_event_source(timer));
     al_register_event_source(queue, al_get_keyboard_event_source());
 
-    ALLEGRO_BITMAP *bg_menu = al_load_bitmap("assets/cenarios/background1.png");
+    ALLEGRO_BITMAP *bg_menu = al_load_bitmap("assets/cenarios/inicio.png");
     if (!bg_menu)
     {
         printf("Erro ao carregar background do menu\n");
@@ -359,9 +380,14 @@ int main(void)
     ALLEGRO_BITMAP *run = al_load_bitmap("assets/sprites/Samurai/Run.png");
     ALLEGRO_BITMAP *jump = al_load_bitmap("assets/sprites/Samurai/Jump.png");
     ALLEGRO_BITMAP *coracao = al_load_bitmap("assets/itens/vida.png");
-    ALLEGRO_BITMAP *zumbi_sprite = al_load_bitmap("assets/sprites/Inimigos/zumbi.png");
+    ALLEGRO_BITMAP *zumbi_sprite = al_load_bitmap("assets/sprites/Zombies/Walk.png");
+    ALLEGRO_BITMAP *ataque1 = al_load_bitmap("assets/sprites/Samurai/Attack_1.png");
+    ALLEGRO_BITMAP *ataque2 = al_load_bitmap("assets/sprites/Samurai/Attack_2.png");
+    ALLEGRO_BITMAP *ataque3 = al_load_bitmap("assets/sprites/Samurai/Attack_3.png");
 
-    if (!bg || !mapa || !idle || !run || !jump || !coracao || !zumbi_sprite)
+    if (!bg || !mapa || !idle || !run || !jump ||
+        !coracao || !zumbi_sprite ||
+        !ataque1 || !ataque2 || !ataque3)
     {
         printf("Erro ao carregar bitmaps do jogo\n");
         return 1;
@@ -375,14 +401,19 @@ int main(void)
     jogador.no_chao = 0;
     jogador.direcao = 0;
     jogador.movendo = 0;
+    jogador.atacando = 0;
+    jogador.frame_ataque = 0;
+    jogador.tipo_ataque = 1;
+    jogador.ultimo_dano = 0;
 
     Inimigo zumbi;
     zumbi.x = 1200;
     zumbi.y = 760;
-    zumbi.velocidade = 2.0f;
+    zumbi.velocidade = 1.35f;
     zumbi.direcao = 0;
     zumbi.vivo = 1;
     zumbi.frame = 0;
+    zumbi.vida = 100;
 
     Temporizador tempo;
     tempo.inicio = al_get_time();
@@ -421,25 +452,55 @@ int main(void)
 
             al_get_keyboard_state(&state);
 
+            static int key_k_anterior = 0;
+
+            int key_k_atual =
+                al_key_down(&state, ALLEGRO_KEY_K);
+
+            if (key_k_atual && !key_k_anterior)
+            {
+                jogador.tipo_ataque++;
+
+                if (jogador.tipo_ataque > 3)
+                    jogador.tipo_ataque = 1;
+            }
+
+            key_k_anterior = key_k_atual;
+
+            static int key_j_anterior = 0;
+
+            int key_j_atual =
+                al_key_down(&state, ALLEGRO_KEY_J);
+
+            if (key_j_atual &&
+                !key_j_anterior &&
+                !jogador.atacando)
+            {
+                jogador.atacando = 1;
+                jogador.frame_ataque = 0;
+            }
+
+            key_j_anterior = key_j_atual;
+
             if (tempo.ativo)
                 tempo.atual = al_get_time() - tempo.inicio;
 
             jogador.no_chao = esta_no_chao(mapa, jogador.mov.x, jogador.mov.y);
 
             // =========================
-            // MOVIMENTA«√O HORIZONTAL
+            // MOVIMENTA√á√ÉO HORIZONTAL
             // =========================
 
             float novo_x = jogador.mov.x;
 
-            if (al_key_down(&state, ALLEGRO_KEY_D))
+            if (al_key_down(&state, ALLEGRO_KEY_D) && !jogador.atacando)
             {
                 novo_x += VELOCIDADE;
                 jogador.direcao = 0;
                 jogador.movendo = 1;
             }
 
-            if (al_key_down(&state, ALLEGRO_KEY_A))
+            if (al_key_down(&state, ALLEGRO_KEY_A) && !jogador.atacando)
             {
                 novo_x -= VELOCIDADE;
                 jogador.direcao = ALLEGRO_FLIP_HORIZONTAL;
@@ -453,8 +514,12 @@ int main(void)
             // PULO
             // =========================
 
-            if (al_key_down(&state, ALLEGRO_KEY_W) && jogador.no_chao)
+            if (al_key_down(&state, ALLEGRO_KEY_W) &&
+                jogador.no_chao &&
+                !jogador.atacando)
+            {
                 jogador.mov.vel_y = FORCA_PULO;
+            }
 
             jogador.mov.vel_y += GRAVIDADE;
 
@@ -462,7 +527,7 @@ int main(void)
                 jogador.mov.vel_y = MAX_QUEDA;
 
             // =========================
-            // MOVIMENTA«√O VERTICAL
+            // MOVIMENTA√á√ÉO VERTICAL
             // =========================
 
             float novo_y = jogador.mov.y + jogador.mov.vel_y;
@@ -497,7 +562,7 @@ int main(void)
 
             if (zumbi.vivo)
             {
-                zumbi.frame += 0.10f;
+                zumbi.frame += 0.08f;
 
                 if (jogador.mov.x < zumbi.x)
                 {
@@ -512,7 +577,53 @@ int main(void)
             }
 
             // =========================
-            // COLIS√O COM ZUMBI
+            //      HITBOX DE ATAQUE
+            // =========================
+
+            if (jogador.atacando &&
+                jogador.frame_ataque >= 2 &&
+                jogador.frame_ataque <= 2.5 &&
+                zumbi.vivo)
+            {
+                float atk_x;
+                float atk_y = jogador.mov.y;
+
+                if (jogador.direcao == 0)
+                    atk_x = jogador.mov.x + 40;
+                else
+                    atk_x = jogador.mov.x - 60;
+
+                if (
+                    atk_x < zumbi.x + 50 &&
+                    atk_x + 40 > zumbi.x &&
+                    atk_y < zumbi.y + 70 &&
+                    atk_y + 40 > zumbi.y)
+                {
+                    int dano = 0;
+
+                    if (jogador.tipo_ataque == 1)
+                        dano = 15;
+
+                    else if (jogador.tipo_ataque == 2)
+                        dano = 30;
+
+                    else
+                        dano = 50;
+
+                    zumbi.vida -= dano;
+
+                    if (zumbi.vida < 0)
+                        zumbi.vida = 0;
+
+                    if (zumbi.vida <= 0)
+                    {
+                        zumbi.vivo = 0;
+                    }
+                }
+            }
+
+            // =========================
+            // COLIS√ÉO COM ZUMBI
             // =========================
 
             if (zumbi.vivo)
@@ -523,10 +634,19 @@ int main(void)
                     jogador.mov.y < zumbi.y + 80 &&
                     jogador.mov.y + HITBOX_H > zumbi.y)
                 {
-                    perder_vida(vetor_vidas);
+                    if (al_get_time() - jogador.ultimo_dano > 1.0)
+                    {
+                        perder_vida(vetor_vidas);
 
-                    jogador.mov.x = 60;
-                    jogador.mov.y = 253;
+                        jogador.ultimo_dano = al_get_time();
+
+                        if (jogador.direcao == 0)
+                            jogador.mov.x -= 120;
+                        else
+                            jogador.mov.x += 120;
+
+                        jogador.mov.vel_y = -8;
+                    }
                 }
             }
 
@@ -563,27 +683,104 @@ int main(void)
 
             if (zumbi.vivo)
             {
-                int frame_zumbi = (int)zumbi.frame % 6;
+                int frame_zumbi = (int)zumbi.frame % FRAMES_ZUMBI;
+
+                float zumbi_draw_x = zumbi.x - ZUMBI_OFFSET_X;
+                float zumbi_draw_y = zumbi.y - ZUMBI_OFFSET_Y;
 
                 al_draw_scaled_bitmap(
                     zumbi_sprite,
 
-                    frame_zumbi * 128,
+                    frame_zumbi * 96,
+                    0,
+
+                    96,
+                    96,
+
+                    zumbi_draw_x,
+                    zumbi_draw_y,
+
+                    ZUMBI_DRAW_W,
+                    ZUMBI_DRAW_H,
+
+                    zumbi.direcao);
+            }
+            al_draw_filled_rectangle(
+                zumbi.x,
+                zumbi.y - 20,
+
+                zumbi.x + 100,
+                zumbi.y - 10,
+
+                al_map_rgb(80, 0, 0));
+
+            al_draw_filled_rectangle(
+                zumbi.x,
+                zumbi.y - 20,
+
+                zumbi.x + zumbi.vida,
+                zumbi.y - 10,
+
+                al_map_rgb(255, 0, 0));
+            if (jogador.atacando)
+            {
+                int max_frames = 0;
+
+                if (jogador.tipo_ataque == 1)
+                    max_frames = 6;
+
+                else if (jogador.tipo_ataque == 2)
+                    max_frames = 4;
+
+                else
+                    max_frames = 3;
+
+                int f = (int)jogador.frame_ataque;
+
+                if (f >= max_frames)
+                    f = max_frames - 1;
+
+                ALLEGRO_BITMAP *atk = NULL;
+
+                if (jogador.tipo_ataque == 1)
+                    atk = ataque1;
+
+                else if (jogador.tipo_ataque == 2)
+                    atk = ataque2;
+
+                else
+                    atk = ataque3;
+
+                
+                float atk_draw_x = draw_x - 10;
+                float atk_draw_y = draw_y - 40;
+
+                al_draw_scaled_bitmap(
+                    atk,
+
+                    128 * f,
                     0,
 
                     128,
                     128,
 
-                    (int)zumbi.x,
-                    (int)zumbi.y,
+                    atk_draw_x,
+                    atk_draw_y,
 
-                    180,
-                    180,
+                    ATTACK_DRAW_W,
+                    ATTACK_DRAW_H,
 
-                    zumbi.direcao);
+                    jogador.direcao);
+
+                jogador.frame_ataque += 0.30f;
+
+                if (jogador.frame_ataque >= max_frames)
+                {
+                    jogador.atacando = 0;
+                    jogador.frame_ataque = 0;
+                }
             }
-
-            if (!jogador.no_chao)
+            else if (!jogador.no_chao)
             {
                 int f = (int)jogador.frame % FRAMES_JUMP;
 
@@ -591,8 +788,8 @@ int main(void)
                     jump,
                     128 * f, 0,
                     128, 128,
-                    (int)draw_x,
-                    (int)draw_y,
+                    draw_x,
+                    draw_y,
                     DRAW_W,
                     DRAW_H,
                     jogador.direcao);
@@ -605,8 +802,8 @@ int main(void)
                     run,
                     128 * f, 0,
                     128, 128,
-                    (int)draw_x,
-                    (int)draw_y,
+                    draw_x,
+                    draw_y,
                     DRAW_W,
                     DRAW_H,
                     jogador.direcao);
@@ -619,8 +816,8 @@ int main(void)
                     idle,
                     128 * f, 0,
                     128, 128,
-                    (int)draw_x,
-                    (int)draw_y,
+                    draw_x,
+                    draw_y,
                     DRAW_W,
                     DRAW_H,
                     jogador.direcao);
@@ -679,6 +876,10 @@ int main(void)
     al_destroy_event_queue(queue);
     al_destroy_display(display);
     al_destroy_bitmap(zumbi_sprite);
+
+    al_destroy_bitmap(ataque1);
+    al_destroy_bitmap(ataque2);
+    al_destroy_bitmap(ataque3);
 
     return 0;
 }
