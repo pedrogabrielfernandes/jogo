@@ -140,19 +140,19 @@ typedef struct
 } Horda;
 
 /* ================================================================== */
-/*  PROTÓTIPOS (forward declarations)                                   */
+/*  PROTOTIPOS (forward declarations)                                   */
 /* ================================================================== */
 
 void perder_vida(VidaStatus *vidas);
 void ordenar_ranking(float r[], int n);
-int  busca_binaria(float r[], int n, float v);
+int busca_binaria(float r[], int n, float v);
 void carregar_ranking(Temporizador *t);
 void salvar_ranking(Temporizador *t);
 void atualizar_sanidade(Sanidade *san);
 void gerar_mapa_colisao(ALLEGRO_BITMAP *mapa);
 
 /* ================================================================== */
-/*  FUNÇÕES AUXILIARES                                                  */
+/*  FUNCOES AUXILIARES                                                  */
 /* ================================================================== */
 
 int **criar_matriz_decorativa(int linhas, int colunas)
@@ -261,7 +261,7 @@ void desenhar_vidas(VidaStatus *vidas, ALLEGRO_BITMAP *coracao)
         if (vidas[i].ativa) vivas++;
     float pct = (float)vivas / MAX_VIDAS;
     ALLEGRO_COLOR cor = (vivas >= 4)   ? al_map_rgb(0, 200, 0)
-                      : (vivas >= 2)   ? al_map_rgb(220, 200, 0)
+                        : (vivas >= 2) ? al_map_rgb(220, 200, 0)
                                        : al_map_rgb(200, 0, 0);
     float bx = 290, by = 940, bw = 320, bh = 63;
     al_draw_filled_rectangle(bx, by, bx + bw, by + bh, al_map_rgb(40, 40, 40));
@@ -294,83 +294,32 @@ void desenhar_estamina(float estamina, ALLEGRO_BITMAP *spr)
 void desenhar_sanidade(Sanidade *san, ALLEGRO_BITMAP *spr)
 {
     float pct = san->valor / MAX_SANIDADE;
-
     unsigned char g = (unsigned char)(20 * pct);
     unsigned char b = g;
+    ALLEGRO_COLOR cor = (san->valor > 0)
+                            ? al_map_rgb(180, g, b)
+                            : al_map_rgb(80, 80, 80);
 
-    ALLEGRO_COLOR cor =
-        (san->valor > 0)
-        ? al_map_rgb(180, g, b)
-        : al_map_rgb(80, 80, 80);
-
-    /* =================================
-       BARRA DE SANIDADE
-       ================================= */
-
-    /* posição */
-    float barra_x = 90;
+    float barra_x      = 90;
     float barra_base_y = 1050;
-
-    /* tamanho */
     float barra_largura = 30;
     float barra_altura  = 230;
-
     float fill_h = barra_altura * pct;
     float topo   = barra_base_y - barra_altura;
 
-    al_draw_filled_rectangle(
-        barra_x,
-        topo,
-        barra_x + barra_largura,
-        barra_base_y,
-        al_map_rgb(40, 40, 40));
-
-    al_draw_filled_rectangle(
-        barra_x,
-        barra_base_y - fill_h,
-        barra_x + barra_largura,
-        barra_base_y,
-        cor);
-
-    al_draw_rectangle(
-        barra_x,
-        topo,
-        barra_x + barra_largura,
-        barra_base_y,
-        al_map_rgb(255, 255, 255),
-        2);
-
-    /* =================================
-       PNG DA SANIDADE
-       ================================= */
+    al_draw_filled_rectangle(barra_x, topo,
+                             barra_x + barra_largura, barra_base_y,
+                             al_map_rgb(40, 40, 40));
+    al_draw_filled_rectangle(barra_x, barra_base_y - fill_h,
+                             barra_x + barra_largura, barra_base_y, cor);
+    al_draw_rectangle(barra_x, topo,
+                      barra_x + barra_largura, barra_base_y,
+                      al_map_rgb(255, 255, 255), 2);
 
     if (spr)
-    {
-        /* posição */
-        float png_x = 5;
-        float png_y = 780;
-
-        /* tamanho */
-        float png_largura = 200;
-        float png_altura  = 300;
-
-        al_draw_scaled_bitmap(
-            spr,
-
-            0,
-            0,
-
-            al_get_bitmap_width(spr),
-            al_get_bitmap_height(spr),
-
-            png_x,
-            png_y,
-
-            png_largura,
-            png_altura,
-
-            0);
-    }
+        al_draw_scaled_bitmap(spr, 0, 0,
+                              al_get_bitmap_width(spr), al_get_bitmap_height(spr),
+                              5, 780, 200, 300, 0);
 }
 
 void desenhar_overlay_sanidade(Sanidade *san)
@@ -384,17 +333,13 @@ void desenhar_overlay_sanidade(Sanidade *san)
 void atualizar_sanidade(Sanidade *san)
 {
     int gatilho = san->zumbis_mortos / ZUMBIS_POR_QUEDA;
-
-    /* perde sanidade ao matar muitos */
     if (gatilho > san->ultimo_gatilho)
     {
         san->ultimo_gatilho = gatilho;
         san->valor -= QUEDA_SANIDADE;
-        if (san->valor < 0)  san->valor = 0;
+        if (san->valor < 0) san->valor = 0;
         if (san->valor <= 0) san->game_over = 1;
     }
-
-    /* recupera sanidade se parar de matar por TEMPO_RECUPERACAO segundos */
     if (al_get_time() - san->ultimo_abate >= TEMPO_RECUPERACAO)
     {
         san->regenerando = 1;
@@ -433,21 +378,166 @@ void desenhar_hud_horda(ALLEGRO_FONT *f, Horda *h)
 {
     char buf[64];
     sprintf(buf, "Zumbis: %d / %d", h->total_mortos, TOTAL_ZUMBIS_FASE);
-
     float cx = LARGURA / 2.0f;
     float by_ = 10, bh_ = 58, bw_ = 280;
-    al_draw_filled_rounded_rectangle(cx - bw_ / 2 + 4, by_ + 4, cx + bw_ / 2 + 4, by_ + bh_ + 4,
+    al_draw_filled_rounded_rectangle(cx - bw_/2 + 4, by_ + 4, cx + bw_/2 + 4, by_ + bh_ + 4,
                                      8, 8, al_map_rgba(0, 0, 0, 120));
-    al_draw_filled_rounded_rectangle(cx - bw_ / 2, by_, cx + bw_ / 2, by_ + bh_,
+    al_draw_filled_rounded_rectangle(cx - bw_/2, by_, cx + bw_/2, by_ + bh_,
                                      8, 8, al_map_rgb(101, 60, 20));
-    al_draw_rounded_rectangle(cx - bw_ / 2, by_, cx + bw_ / 2, by_ + bh_,
+    al_draw_rounded_rectangle(cx - bw_/2, by_, cx + bw_/2, by_ + bh_,
                               8, 8, al_map_rgb(218, 165, 32), 3);
     al_draw_text(f, al_map_rgba(0, 0, 0, 180), cx + 2, by_ + 12 + 2, ALLEGRO_ALIGN_CENTER, buf);
     al_draw_text(f, al_map_rgb(255, 215, 0),   cx,     by_ + 12,     ALLEGRO_ALIGN_CENTER, buf);
 }
 
 /* ================================================================== */
-/*  HORDA: spawn / lógica                                               */
+/*  HUD: ATAQUE SELECIONADO â€” canto inferior direito                    */
+/* ================================================================== */
+void desenhar_hud_ataque(
+    ALLEGRO_BITMAP *at1, ALLEGRO_BITMAP *at2, ALLEGRO_BITMAP *at3,
+    ALLEGRO_BITMAP *hab1, ALLEGRO_BITMAP *hab2, ALLEGRO_BITMAP *hab3,
+    int selecao, ALLEGRO_FONT *fonte_hud)
+{
+    float bx = 40.0f;
+    float by = 90.0f;
+    float tam_slot = 62.0f;
+    float pad = 12.0f;
+
+    ALLEGRO_BITMAP *sprites[3] = { hab1, hab2, hab3 };
+    const char     *nomes[3]   = { "", "", "" };
+
+    /* titulo */
+    al_draw_text(fonte_hud, al_map_rgba(0,0,0,180),
+                 bx + 102, by - 34, ALLEGRO_ALIGN_CENTER, "");
+    al_draw_text(fonte_hud, al_map_rgb(218,165,32),
+                 bx + 100, by - 36, ALLEGRO_ALIGN_CENTER, "");
+
+    for (int i = 0; i < 3; i++)
+    {
+        float sx  = bx + i * (tam_slot + pad);
+        float sy  = by;
+        int   sel = (i + 1 == selecao);
+
+        /* sombra */
+        al_draw_filled_rounded_rectangle(
+            sx + 3, sy + 3, sx + tam_slot + 3, sy + tam_slot + 3,
+            6, 6, al_map_rgba(0, 0, 0, 120));
+
+        /* fundo do slot */
+        al_draw_filled_rounded_rectangle(
+            sx, sy, sx + tam_slot, sy + tam_slot, 6, 6,
+            sel ? al_map_rgb(218, 165, 32) : al_map_rgb(60, 35, 10));
+
+        /* borda */
+        al_draw_rounded_rectangle(
+            sx, sy, sx + tam_slot, sy + tam_slot,
+            6, 6, al_map_rgb(218, 165, 32), sel ? 3 : 1);
+
+        /* icone */
+        float ipad = sel ? 1.0f : 5.0f;
+        al_draw_scaled_bitmap(sprites[i], 0, 0,
+            al_get_bitmap_width(sprites[i]), al_get_bitmap_height(sprites[i]),
+            sx + ipad, sy + ipad,
+            tam_slot - ipad * 3, tam_slot - ipad * 3, 0);
+
+        /* nome abaixo */
+        al_draw_text(fonte_hud,
+            sel ? al_map_rgb(255, 215, 0) : al_map_rgb(180, 180, 180),
+            sx + tam_slot / 2.0f, sy + tam_slot + 4,
+            ALLEGRO_ALIGN_CENTER, nomes[i]);
+
+        /* indicador "K" no slot ativo */
+        if (sel)
+        {
+            al_draw_filled_circle(sx + tam_slot - 10, sy + 10, 9, al_map_rgb(0, 0, 0));
+            al_draw_circle(sx + tam_slot - 10, sy + 10, 9, al_map_rgb(218, 165, 32), 1);
+            al_draw_text(fonte_hud, al_map_rgb(255, 235, 0),
+                         sx + tam_slot - 10, sy + 2, ALLEGRO_ALIGN_CENTER, "K");
+        }
+    }
+    (void)at1; (void)at2; (void)at3; /* evita warning de parametros nao usados */
+}
+
+/* ================================================================== */
+/*  RODA DE HABILIDADE â€” abre ao segurar K, navega com Q/E             */
+/* ================================================================== */
+void desenhar_roda_habilidade(
+    ALLEGRO_BITMAP *at1, ALLEGRO_BITMAP *at2, ALLEGRO_BITMAP *at3,
+    ALLEGRO_BITMAP *hab1, ALLEGRO_BITMAP *hab2, ALLEGRO_BITMAP *hab3,
+    int selecao, ALLEGRO_FONT *fonte_hud)
+{
+    float cx    = LARGURA / 2.0f;
+    float cy    = ALTURA  / 2.0f;
+    float r_ext = 175.0f;
+    float r_int =  58.0f;
+
+    /* overlay escuro */
+    al_draw_filled_rectangle(0, 0, LARGURA, ALTURA, al_map_rgba(0, 0, 0, 140));
+
+    /* titulo */
+    al_draw_text(fonte_hud, al_map_rgba(0,0,0,200),
+                 cx + 2, cy - r_ext - 52 + 2, ALLEGRO_ALIGN_CENTER, "Selecionar Ataque");
+    al_draw_text(fonte_hud, al_map_rgb(255, 215, 0),
+                 cx,     cy - r_ext - 52,     ALLEGRO_ALIGN_CENTER, "Selecionar Ataque");
+
+    const char     *nomes[3]   = { "", "", "" };
+    ALLEGRO_BITMAP *sprites[3] = { hab1, hab2, hab3 };
+
+    /* 1a fatia comeca no topo (-90 graus), 3 fatias de 120 graus */
+    float base = -(float)ALLEGRO_PI / 2.0f;
+    float step =  2.0f * (float)ALLEGRO_PI / 3.0f;
+
+    for (int i = 0; i < 3; i++)
+    {
+        float a0   = base + i * step;
+        float amid = a0 + step / 2.0f;
+        int   sel  = (i + 1 == selecao);
+
+        /* fatia */
+        ALLEGRO_COLOR cor_fatia = sel
+            ? al_map_rgba(218, 165,  32, 210)
+            : al_map_rgba( 60,  35,  10, 185);
+        al_draw_filled_pieslice(cx, cy, r_ext, a0, step, cor_fatia);
+
+        /* borda dourada */
+        al_draw_pieslice(cx, cy, r_ext, a0, step,
+                         al_map_rgb(218, 165, 32), sel ? 4 : 2);
+
+        /* icone */
+        float dist = r_int + (r_ext - r_int) * 0.55f;
+        float ix   = cx + cosf(amid) * dist;
+        float iy   = cy + sinf(amid) * dist;
+        float itam = sel ? 150.0f : 130.0f;
+
+        al_draw_scaled_bitmap(sprites[i], 0, 0,
+            al_get_bitmap_width(sprites[i]), al_get_bitmap_height(sprites[i]),
+            ix - itam / 2.0f, iy - itam / 2.0f, itam, itam, 0);
+
+        /* nome fora do circulo */
+        float tx = cx + cosf(amid) * (r_ext + 32.0f);
+        float ty = cy + sinf(amid) * (r_ext + 32.0f);
+        al_draw_text(fonte_hud,
+            sel ? al_map_rgb(255, 215, 0) : al_map_rgb(200, 200, 200),
+            tx, ty - 14, ALLEGRO_ALIGN_CENTER, nomes[i]);
+    }
+
+    /* buraco central */
+    al_draw_filled_circle(cx, cy, r_int, al_map_rgb(28, 14, 4));
+    al_draw_circle       (cx, cy, r_int, al_map_rgb(218, 165, 32), 2);
+
+    /* instrucao */
+    al_draw_text(fonte_hud, al_map_rgba(0,0,0,180),
+                 cx + 2, cy + r_ext + 20, ALLEGRO_ALIGN_CENTER,
+                 "Q / E para navegar   |   Solte K para confirmar");
+    al_draw_text(fonte_hud, al_map_rgb(220, 220, 220),
+                 cx,     cy + r_ext + 18, ALLEGRO_ALIGN_CENTER,
+                 "Q / E para navegar   |   Solte K para confirmar");
+
+    (void)at1; (void)at2; (void)at3;
+}
+
+/* ================================================================== */
+/*  HORDA: spawn / logica                                               */
 /* ================================================================== */
 
 void horda_init(Horda *h)
@@ -456,7 +546,7 @@ void horda_init(Horda *h)
         h->pool[i].vivo = 0;
     h->total_spawned  = 0;
     h->total_mortos   = 0;
-    h->timer_onda     = 180; /* ~3s de espera antes da 1ª onda */
+    h->timer_onda     = 180;
     h->fase_concluida = 0;
 }
 
@@ -477,18 +567,15 @@ static int slot_livre(Horda *h)
 
 void horda_atualizar_spawn(Horda *h)
 {
-    if (h->fase_concluida) return;
-    if (h->total_spawned >= TOTAL_ZUMBIS_FASE) return;
+    if (h->fase_concluida || h->total_spawned >= TOTAL_ZUMBIS_FASE) return;
 
     h->timer_onda--;
     if (h->timer_onda > 0) return;
 
-    int restam_para_spawnar = TOTAL_ZUMBIS_FASE - h->total_spawned;
-    int para_spawnar = (restam_para_spawnar < ZUMBIS_POR_ONDA)
-                           ? restam_para_spawnar
-                           : ZUMBIS_POR_ONDA;
+    int restam      = TOTAL_ZUMBIS_FASE - h->total_spawned;
+    int para_spawn  = (restam < ZUMBIS_POR_ONDA) ? restam : ZUMBIS_POR_ONDA;
 
-    for (int n = 0; n < para_spawnar; n++)
+    for (int n = 0; n < para_spawn; n++)
     {
         int s = slot_livre(h);
         if (s < 0) break;
@@ -504,24 +591,21 @@ void horda_atualizar_spawn(Horda *h)
         h->pool[s].vivo      = 1;
         h->pool[s].frame     = (float)(rand() % 8);
 
-        /* 25% de chance de ser zumbi rápido (vermelho, menos vida) */
         int rapido = (rand() % 100) < 25;
         if (rapido)
         {
             h->pool[s].tipo       = 1;
-            h->pool[s].velocidade = 1.8f + (float)(rand() % 50) / 100.0f; /* 1.8?2.3 */
+            h->pool[s].velocidade = 1.8f + (float)(rand() % 50) / 100.0f;
             h->pool[s].vida       = 70;
         }
         else
         {
             h->pool[s].tipo       = 0;
-            h->pool[s].velocidade = 0.6f + (float)(rand() % 40) / 100.0f; /* 0.6?1.0 */
+            h->pool[s].velocidade = 0.6f + (float)(rand() % 40) / 100.0f;
             h->pool[s].vida       = 100;
         }
-
         h->total_spawned++;
     }
-
     h->timer_onda = INTERVALO_ONDA;
 }
 
@@ -532,36 +616,19 @@ void horda_atualizar_movimento(Horda *h, Jogador *j)
         Inimigo *z = &h->pool[i];
         if (!z->vivo) continue;
 
-        /* animação proporcional à velocidade do zumbi */
         float vel_anim = (z->tipo == 1) ? 0.12f : 0.05f;
         z->frame += vel_anim;
 
         float dy = fabsf(j->mov.y - z->y);
         if (dy > 180)
         {
-            if (z->x < z->x_inicial)
-            {
-                z->x += z->velocidade;
-                z->direcao = 0;
-            }
-            else if (z->x > z->x_inicial)
-            {
-                z->x -= z->velocidade;
-                z->direcao = ALLEGRO_FLIP_HORIZONTAL;
-            }
+            if (z->x < z->x_inicial) { z->x += z->velocidade; z->direcao = 0; }
+            else if (z->x > z->x_inicial) { z->x -= z->velocidade; z->direcao = ALLEGRO_FLIP_HORIZONTAL; }
         }
         else
         {
-            if (j->mov.x < z->x)
-            {
-                z->x -= z->velocidade;
-                z->direcao = ALLEGRO_FLIP_HORIZONTAL;
-            }
-            else
-            {
-                z->x += z->velocidade;
-                z->direcao = 0;
-            }
+            if (j->mov.x < z->x) { z->x -= z->velocidade; z->direcao = ALLEGRO_FLIP_HORIZONTAL; }
+            else                  { z->x += z->velocidade; z->direcao = 0; }
         }
     }
 }
@@ -584,8 +651,8 @@ void horda_verificar_ataque(Horda *h, Jogador *jog, Sanidade *san)
         if (atk_x < hzx + hzw && atk_x + haw > hzx &&
             atk_y < hzy + hzh && atk_y + hah > hzy)
         {
-            int dano = (jog->tipo_ataque == 1) ? 15
-                     : (jog->tipo_ataque == 2) ? 30 : 50;
+            int dano = (jog->tipo_ataque == 1)   ? 15
+                       : (jog->tipo_ataque == 2) ? 30 : 50;
             z->vida -= dano;
             if (z->vida < 0) z->vida = 0;
             if (z->vida <= 0)
@@ -635,16 +702,12 @@ void horda_desenhar(Horda *h, ALLEGRO_BITMAP *spr)
         float dy = z->y - ZUMBI_OFFSET_Y;
         int fz = (int)z->frame % FRAMES_ZUMBI;
 
-        /* zumbi rapido fica avermelhado */
         ALLEGRO_COLOR tint = (z->tipo == 1)
-                             ? al_map_rgb(255, 120, 120)
-                             : al_map_rgb(255, 255, 255);
+                                 ? al_map_rgb(255, 120, 120)
+                                 : al_map_rgb(255, 255, 255);
+        al_draw_tinted_scaled_bitmap(spr, tint, fz * 96, 0, 96, 96,
+                                     dx, dy, ZUMBI_DRAW_W, ZUMBI_DRAW_H, z->direcao);
 
-        al_draw_tinted_scaled_bitmap(
-            spr, tint, fz * 96, 0, 96, 96,
-            dx, dy, ZUMBI_DRAW_W, ZUMBI_DRAW_H, z->direcao);
-
-        /* barra de vida */
         float bw2 = 58;
         float bx2 = dx + ZUMBI_DRAW_W / 2.0f - bw2 / 2.0f - 2;
         float by2 = dy + 26;
@@ -685,67 +748,65 @@ void tela_ranking(
         if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) return;
         if (ev.type == ALLEGRO_EVENT_KEY_DOWN)
             if (ev.keyboard.keycode == ALLEGRO_KEY_ENTER ||
-                ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE) return;
+                ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
+                return;
+        if (ev.type != ALLEGRO_EVENT_TIMER) continue;
 
-        if (ev.type == ALLEGRO_EVENT_TIMER)
+        al_clear_to_color(al_map_rgb(15, 10, 5));
+
+        float pw = 700, ph = 680;
+        float px_ = LARGURA / 2.0f - pw / 2.0f;
+        float py_ = ALTURA  / 2.0f - ph / 2.0f;
+
+        al_draw_filled_rounded_rectangle(px_+6, py_+6, px_+pw+6, py_+ph+6,
+                                         14, 14, al_map_rgba(0,0,0,160));
+        al_draw_filled_rounded_rectangle(px_, py_, px_+pw, py_+ph,
+                                         14, 14, al_map_rgb(50,28,8));
+        al_draw_rounded_rectangle(px_, py_, px_+pw, py_+ph,
+                                  14, 14, al_map_rgb(218,165,32), 4);
+        al_draw_rounded_rectangle(px_+6, py_+6, px_+pw-6, py_+ph-6,
+                                  10, 10, al_map_rgba(255,210,80,60), 1);
+
+        al_draw_text(fonte, al_map_rgba(0,0,0,180),
+                     LARGURA/2.0f+3, py_+20+3, ALLEGRO_ALIGN_CENTER, "FASE CONCLUIDA!");
+        al_draw_text(fonte, al_map_rgb(255,215,0),
+                     LARGURA/2.0f,   py_+20,   ALLEGRO_ALIGN_CENTER, "FASE CONCLUIDA!");
+
+        char buf[80];
+        sprintf(buf, "Seu tempo: %.2f s", tempo_final);
+        al_draw_text(fonte_hud, al_map_rgba(0,0,0,180),
+                     LARGURA/2.0f+2, py_+80+2, ALLEGRO_ALIGN_CENTER, buf);
+        al_draw_text(fonte_hud, al_map_rgb(255,255,180),
+                     LARGURA/2.0f,   py_+80,   ALLEGRO_ALIGN_CENTER, buf);
+
+        al_draw_line(px_+40, py_+135, px_+pw-40, py_+135, al_map_rgb(218,165,32), 2);
+        al_draw_text(fonte_hud, al_map_rgb(218,165,32),
+                     LARGURA/2.0f, py_+148, ALLEGRO_ALIGN_CENTER, "TOP 10");
+
+        for (int i = 0; i < tempo->quantidade_scores; i++)
         {
-            al_clear_to_color(al_map_rgb(15, 10, 5));
-
-            float pw = 700, ph = 680;
-            float px_ = LARGURA / 2.0f - pw / 2.0f;
-            float py_ = ALTURA  / 2.0f - ph / 2.0f;
-
-            al_draw_filled_rounded_rectangle(px_ + 6, py_ + 6, px_ + pw + 6, py_ + ph + 6,
-                                             14, 14, al_map_rgba(0, 0, 0, 160));
-            al_draw_filled_rounded_rectangle(px_, py_, px_ + pw, py_ + ph,
-                                             14, 14, al_map_rgb(50, 28, 8));
-            al_draw_rounded_rectangle(px_, py_, px_ + pw, py_ + ph,
-                                      14, 14, al_map_rgb(218, 165, 32), 4);
-            al_draw_rounded_rectangle(px_ + 6, py_ + 6, px_ + pw - 6, py_ + ph - 6,
-                                      10, 10, al_map_rgba(255, 210, 80, 60), 1);
-
-            al_draw_text(fonte, al_map_rgba(0, 0, 0, 180),
-                         LARGURA / 2.0f + 3, py_ + 20 + 3, ALLEGRO_ALIGN_CENTER, "FASE CONCLUIDA!");
-            al_draw_text(fonte, al_map_rgb(255, 215, 0),
-                         LARGURA / 2.0f, py_ + 20, ALLEGRO_ALIGN_CENTER, "FASE CONCLUIDA!");
-
-            char buf[80];
-            sprintf(buf, "Seu tempo: %.2f s", tempo_final);
-            al_draw_text(fonte_hud, al_map_rgba(0, 0, 0, 180),
-                         LARGURA / 2.0f + 2, py_ + 80 + 2, ALLEGRO_ALIGN_CENTER, buf);
-            al_draw_text(fonte_hud, al_map_rgb(255, 255, 180),
-                         LARGURA / 2.0f, py_ + 80, ALLEGRO_ALIGN_CENTER, buf);
-
-            al_draw_line(px_ + 40, py_ + 135, px_ + pw - 40, py_ + 135,
-                         al_map_rgb(218, 165, 32), 2);
-            al_draw_text(fonte_hud, al_map_rgb(218, 165, 32),
-                         LARGURA / 2.0f, py_ + 148, ALLEGRO_ALIGN_CENTER, "TOP 10");
-
-            for (int i = 0; i < tempo->quantidade_scores; i++)
-            {
-                char linha[64];
-                sprintf(linha, "%d.   %.2f s", i + 1, tempo->ranking[i]);
-                ALLEGRO_COLOR cor = al_map_rgb(220, 220, 220);
-                if (fabsf(tempo->ranking[i] - (float)tempo_final) < 0.005f)
-                    cor = al_map_rgb(255, 215, 0);
-                al_draw_text(fonte_hud, al_map_rgba(0, 0, 0, 140),
-                             LARGURA / 2.0f + 2, py_ + 195 + i * 44 + 2, ALLEGRO_ALIGN_CENTER, linha);
-                al_draw_text(fonte_hud, cor,
-                             LARGURA / 2.0f, py_ + 195 + i * 44, ALLEGRO_ALIGN_CENTER, linha);
-            }
-
-            al_draw_text(fonte_hud, al_map_rgba(0, 0, 0, 160),
-                         LARGURA / 2.0f + 2, py_ + ph - 52 + 2, ALLEGRO_ALIGN_CENTER, "Pressione ENTER para sair");
-            al_draw_text(fonte_hud, al_map_rgb(160, 160, 160),
-                         LARGURA / 2.0f, py_ + ph - 52, ALLEGRO_ALIGN_CENTER, "Pressione ENTER para sair");
-
-            al_flip_display();
+            char linha[64];
+            sprintf(linha, "%d.   %.2f s", i+1, tempo->ranking[i]);
+            ALLEGRO_COLOR cor = al_map_rgb(220, 220, 220);
+            if (fabsf(tempo->ranking[i] - (float)tempo_final) < 0.005f)
+                cor = al_map_rgb(255, 215, 0);
+            al_draw_text(fonte_hud, al_map_rgba(0,0,0,140),
+                         LARGURA/2.0f+2, py_+195+i*44+2, ALLEGRO_ALIGN_CENTER, linha);
+            al_draw_text(fonte_hud, cor,
+                         LARGURA/2.0f,   py_+195+i*44,   ALLEGRO_ALIGN_CENTER, linha);
         }
+
+        al_draw_text(fonte_hud, al_map_rgba(0,0,0,160),
+                     LARGURA/2.0f+2, py_+ph-52+2, ALLEGRO_ALIGN_CENTER, "Pressione ENTER para sair");
+        al_draw_text(fonte_hud, al_map_rgb(160,160,160),
+                     LARGURA/2.0f,   py_+ph-52,   ALLEGRO_ALIGN_CENTER, "Pressione ENTER para sair");
+
+        al_flip_display();
     }
 }
 
 /* ================================================================== */
-/*  IMPLEMENTAÇÕES das funções declaradas como protótipos               */
+/*  IMPLEMENTACOES das funcoes declaradas como prototipos               */
 /* ================================================================== */
 
 void perder_vida(VidaStatus *vidas)
@@ -763,16 +824,18 @@ void ordenar_ranking(float r[], int n)
 {
     for (int i = 0; i < n - 1; i++)
         for (int j = 0; j < n - i - 1; j++)
-            if (r[j] > r[j + 1])
-            {
-                float t = r[j]; r[j] = r[j + 1]; r[j + 1] = t;
-            }
+            if (r[j] > r[j+1]) { float t = r[j]; r[j] = r[j+1]; r[j+1] = t; }
 }
 
 int busca_binaria(float r[], int n, float v)
 {
     int lo = 0, hi = n - 1, mid;
-    while (lo <= hi) { mid = (lo + hi) / 2; if (v < r[mid]) hi = mid - 1; else lo = mid + 1; }
+    while (lo <= hi)
+    {
+        mid = (lo + hi) / 2;
+        if (v < r[mid]) hi = mid - 1;
+        else            lo = mid + 1;
+    }
     return lo;
 }
 
@@ -818,16 +881,16 @@ int main(void)
 {
     srand((unsigned)time(NULL));
 
-    if (!al_init())                  { puts("Erro al_init");                   return 1; }
-    if (!al_init_primitives_addon()) { puts("Erro primitives");                return 1; }
-    if (!al_install_keyboard())      { puts("Erro keyboard");                  return 1; }
-    if (!al_init_image_addon())      { puts("Erro image");                     return 1; }
+    if (!al_init())              { puts("Erro al_init");       return 1; }
+    if (!al_init_primitives_addon()) { puts("Erro primitives"); return 1; }
+    if (!al_install_keyboard())  { puts("Erro keyboard");      return 1; }
+    if (!al_init_image_addon())  { puts("Erro image");         return 1; }
     al_init_font_addon();
     al_init_ttf_addon();
 
-    ALLEGRO_DISPLAY     *display = al_create_display(LARGURA, ALTURA);
-    ALLEGRO_EVENT_QUEUE *queue   = al_create_event_queue();
-    ALLEGRO_TIMER       *timer   = al_create_timer(1.0 / FPS);
+    ALLEGRO_DISPLAY    *display = al_create_display(LARGURA, ALTURA);
+    ALLEGRO_EVENT_QUEUE *queue  = al_create_event_queue();
+    ALLEGRO_TIMER       *timer  = al_create_timer(1.0 / FPS);
     if (!display || !queue || !timer) { puts("Erro init display/queue/timer"); return 1; }
 
     ALLEGRO_FONT *fonte     = al_load_ttf_font("assets/arial.ttf", 48, 0);
@@ -848,42 +911,53 @@ int main(void)
     if (escolha == MENU_SAIR)
     {
         al_destroy_bitmap(bg_menu);
-        al_destroy_font(fonte_hud); al_destroy_font(fonte);
-        al_destroy_timer(timer); al_destroy_event_queue(queue);
+        al_destroy_font(fonte_hud);
+        al_destroy_font(fonte);
+        al_destroy_timer(timer);
+        al_destroy_event_queue(queue);
         al_destroy_display(display);
         return 0;
     }
     al_flush_event_queue(queue);
 
     /* --- bitmaps do jogo --- */
-    ALLEGRO_BITMAP *bg           = al_load_bitmap("assets/cenarios/background2.png");
-    ALLEGRO_BITMAP *mapa         = al_load_bitmap("assets/cenarios/colisao2.png");
-    ALLEGRO_BITMAP *idle         = al_load_bitmap("assets/sprites/Samurai/Idle.png");
-    ALLEGRO_BITMAP *run          = al_load_bitmap("assets/sprites/Samurai/Run.png");
-    ALLEGRO_BITMAP *jump         = al_load_bitmap("assets/sprites/Samurai/Jump.png");
-    ALLEGRO_BITMAP *coracao      = al_load_bitmap("assets/itens/vida.png");
+    ALLEGRO_BITMAP *bg          = al_load_bitmap("assets/cenarios/background2.png");
+    ALLEGRO_BITMAP *mapa        = al_load_bitmap("assets/cenarios/colisao2.png");
+    ALLEGRO_BITMAP *idle        = al_load_bitmap("assets/sprites/Samurai/Idle.png");
+    ALLEGRO_BITMAP *run         = al_load_bitmap("assets/sprites/Samurai/Run.png");
+    ALLEGRO_BITMAP *jump        = al_load_bitmap("assets/sprites/Samurai/Jump.png");
+    ALLEGRO_BITMAP *coracao     = al_load_bitmap("assets/itens/vida.png");
     ALLEGRO_BITMAP *spr_estamina = al_load_bitmap("assets/itens/estamina.png");
     ALLEGRO_BITMAP *zumbi_sprite = al_load_bitmap("assets/sprites/Zombies/Walk.png");
-    ALLEGRO_BITMAP *ataque1      = al_load_bitmap("assets/sprites/Samurai/Attack_1.png");
-    ALLEGRO_BITMAP *ataque2      = al_load_bitmap("assets/sprites/Samurai/Attack_2.png");
-    ALLEGRO_BITMAP *ataque3      = al_load_bitmap("assets/sprites/Samurai/Attack_3.png");
+    ALLEGRO_BITMAP *ataque1     = al_load_bitmap("assets/sprites/Samurai/Attack_1.png");
+    ALLEGRO_BITMAP *ataque2     = al_load_bitmap("assets/sprites/Samurai/Attack_2.png");
+    ALLEGRO_BITMAP *ataque3     = al_load_bitmap("assets/sprites/Samurai/Attack_3.png");
     ALLEGRO_BITMAP *spr_sanidade = al_load_bitmap("assets/itens/sanidade.png");
 
+    /* --- icones exclusivos da roda/HUD de habilidade --- */
+    ALLEGRO_BITMAP *habilidade1 = al_load_bitmap("assets/itens/Habilidade1.png");
+    ALLEGRO_BITMAP *habilidade2 = al_load_bitmap("assets/itens/Habilidade2.png");
+    ALLEGRO_BITMAP *habilidade3 = al_load_bitmap("assets/itens/Habilidade3.png");
+
     if (!bg || !mapa || !idle || !run || !jump || !coracao || !spr_estamina ||
-        !zumbi_sprite || !ataque1 || !ataque2 || !ataque3)
-    { puts("Erro bitmaps"); return 1; }
+        !zumbi_sprite || !ataque1 || !ataque2 || !ataque3 ||
+        !habilidade1  || !habilidade2 || !habilidade3)
+    {
+        puts("Erro bitmaps");
+        return 1;
+    }
 
     gerar_mapa_colisao(mapa);
 
     /* --- jogador --- */
-    Jogador jogador    = {0};
-    jogador.mov.x      = 60;
-    jogador.mov.y      = 253;
+    Jogador jogador = {0};
+    jogador.mov.x       = 60;
+    jogador.mov.y       = 253;
     jogador.tipo_ataque = 1;
-    jogador.estamina   = MAX_ESTAMINA;
+    jogador.estamina    = MAX_ESTAMINA;
 
     /* --- sanidade --- */
-    Sanidade sanidade = { MAX_SANIDADE, 0, 0, 0, 0.0, 0 };
+    Sanidade sanidade = {MAX_SANIDADE, 0, 0, 0, 0.0, 0};
 
     /* --- horda --- */
     Horda horda;
@@ -903,18 +977,23 @@ int main(void)
         strcpy(vetor_vidas[i].status, "Inteira");
     }
 
-    /* --- decoração --- */
+    /* --- decoracao --- */
     int lm = ALTURA / 100 + 1, cm = LARGURA / 100 + 1;
     int **matriz_dec = criar_matriz_decorativa(lm, cm);
 
+    /* --- controle de pausa --- */
     int    pausado      = 0;
     double pausa_inicio = 0;
-    int    rodando      = 1;
-    ALLEGRO_EVENT          ev;
-    ALLEGRO_KEYBOARD_STATE state;
 
-    /* inicializa ultimo_abate para não recuperar sanidade imediatamente */
+    /* --- roda de habilidade --- */
+    int roda_aberta  = 0;
+    int roda_selecao = 1;   /* espelha tipo_ataque enquanto a roda esta aberta */
+
     sanidade.ultimo_abate = al_get_time();
+
+    int rodando = 1;
+    ALLEGRO_EVENT ev;
+    ALLEGRO_KEYBOARD_STATE state;
 
     while (rodando)
     {
@@ -924,7 +1003,7 @@ int main(void)
 
         al_get_keyboard_state(&state);
 
-        /* ESC pausa */
+        /* ---------- ESC: pausa ---------- */
         static int esc_ant = 0;
         int esc_now = al_key_down(&state, ALLEGRO_KEY_ESCAPE);
         if (esc_now && !esc_ant && !sanidade.game_over && !horda.fase_concluida)
@@ -935,9 +1014,9 @@ int main(void)
             else
             {
                 double dt = al_get_time() - pausa_inicio;
-                tempo.inicio        += dt;
-                jogador.ultimo_dano += dt;
-                sanidade.ultimo_abate += dt; /* corrige timer de recuperação durante pausa */
+                tempo.inicio          += dt;
+                jogador.ultimo_dano   += dt;
+                sanidade.ultimo_abate += dt;
             }
         }
         esc_ant = esc_now;
@@ -949,41 +1028,87 @@ int main(void)
             jogador.frame  += 0.15f;
             jogador.movendo = 0;
 
-            if (tempo.ativo) tempo.atual = al_get_time() - tempo.inicio;
+            if (tempo.ativo)
+                tempo.atual = al_get_time() - tempo.inicio;
 
-            /* tecla K: trocar ataque */
+            /* --------------------------------------------------------
+               RODA DE HABILIDADE â€” tecla K
+               - Pressionar K : abre a roda e salva selecao corrente
+               - Q / E        : navega enquanto a roda esta aberta
+               - Soltar K     : confirma e fecha a roda
+               -------------------------------------------------------- */
             static int k_ant = 0;
             int k_now = al_key_down(&state, ALLEGRO_KEY_K);
-            if (k_now && !k_ant) { jogador.tipo_ataque++; if (jogador.tipo_ataque > 3) jogador.tipo_ataque = 1; }
-            k_ant = k_now;
 
-            /* tecla J: atacar */
+            if (k_now && !k_ant)          /* K pressionado: abre roda */
+            {
+                roda_aberta  = 1;
+                roda_selecao = jogador.tipo_ataque;
+            }
+            if (!k_now && k_ant)          /* K solto: confirma e fecha */
+            {
+                jogador.tipo_ataque = roda_selecao;
+                roda_aberta = 0;
+            }
+
+            /* navegacao Q / E so quando a roda esta aberta */
+            if (roda_aberta)
+            {
+                static int q_ant = 0, e_ant = 0;
+                int q_now = al_key_down(&state, ALLEGRO_KEY_Q);
+                int e_now = al_key_down(&state, ALLEGRO_KEY_E);
+
+                if (q_now && !q_ant) { roda_selecao--; if (roda_selecao < 1) roda_selecao = 3; }
+                if (e_now && !e_ant) { roda_selecao++; if (roda_selecao > 3) roda_selecao = 1; }
+
+                q_ant = q_now;
+                e_ant = e_now;
+            }
+
+            k_ant = k_now;
+            /* -------------------------------------------------------- */
+
+            /* J: atacar (bloqueado enquanto roda esta aberta) */
             static int j_ant = 0;
             int j_now = al_key_down(&state, ALLEGRO_KEY_J);
-            if (j_now && !j_ant && !jogador.atacando) { jogador.atacando = 1; jogador.frame_ataque = 0; }
+            if (j_now && !j_ant && !jogador.atacando && !roda_aberta)
+            {
+                jogador.atacando     = 1;
+                jogador.frame_ataque = 0;
+            }
             j_ant = j_now;
 
-            /* chão */
+            /* chao */
             jogador.no_chao = esta_no_chao(mapa, jogador.mov.x, jogador.mov.y);
 
-            /* recarga estamina */
+            /* recarga estamina no chao */
             if (jogador.no_chao)
             {
                 jogador.estamina += RECARGA_ESTAMINA;
                 if (jogador.estamina > MAX_ESTAMINA) jogador.estamina = MAX_ESTAMINA;
             }
 
-            /* movimento horizontal */
+            /* movimento horizontal (bloqueado pela roda) */
             float nx = jogador.mov.x;
-            if (al_key_down(&state, ALLEGRO_KEY_D) && !jogador.atacando)
-                { nx += VELOCIDADE; jogador.direcao = 0; jogador.movendo = 1; }
-            if (al_key_down(&state, ALLEGRO_KEY_A) && !jogador.atacando)
-                { nx -= VELOCIDADE; jogador.direcao = ALLEGRO_FLIP_HORIZONTAL; jogador.movendo = 1; }
-            if (!colide_mapa(mapa, nx, jogador.mov.y)) jogador.mov.x = nx;
+            if (al_key_down(&state, ALLEGRO_KEY_D) && !jogador.atacando && !roda_aberta)
+            {
+                nx += VELOCIDADE;
+                jogador.direcao = 0;
+                jogador.movendo = 1;
+            }
+            if (al_key_down(&state, ALLEGRO_KEY_A) && !jogador.atacando && !roda_aberta)
+            {
+                nx -= VELOCIDADE;
+                jogador.direcao = ALLEGRO_FLIP_HORIZONTAL;
+                jogador.movendo = 1;
+            }
+            if (!colide_mapa(mapa, nx, jogador.mov.y))
+                jogador.mov.x = nx;
 
-            /* pulo */
+            /* pulo (bloqueado pela roda) */
             if (al_key_down(&state, ALLEGRO_KEY_W) && jogador.no_chao &&
-                !jogador.atacando && jogador.estamina >= MAX_ESTAMINA / 2.0f)
+                !jogador.atacando && !roda_aberta &&
+                jogador.estamina >= MAX_ESTAMINA / 2.0f)
             {
                 jogador.mov.vel_y = FORCA_PULO;
                 jogador.estamina -= CUSTO_PULO;
@@ -1003,16 +1128,18 @@ int main(void)
             if (jogador.mov.y > ALTURA + 200)
             {
                 perder_vida(vetor_vidas);
-                jogador.mov.x = 60; jogador.mov.y = 253; jogador.mov.vel_y = 0;
+                jogador.mov.x     = 60;
+                jogador.mov.y     = 253;
+                jogador.mov.vel_y = 0;
             }
 
-            /* ----- horda ----- */
+            /* horda */
             horda_atualizar_spawn(&horda);
             horda_atualizar_movimento(&horda, &jogador);
             horda_verificar_ataque(&horda, &jogador, &sanidade);
             horda_verificar_dano_jogador(&horda, &jogador, vetor_vidas);
 
-            /* fase concluída: para o timer */
+            /* fase concluida: para o timer */
             if (horda.fase_concluida && tempo.ativo)
             {
                 tempo.fim   = al_get_time();
@@ -1036,28 +1163,33 @@ int main(void)
         if (jogador.atacando)
         {
             int mf = (jogador.tipo_ataque == 1) ? 6 : (jogador.tipo_ataque == 2) ? 4 : 3;
-            int f  = (int)jogador.frame_ataque; if (f >= mf) f = mf - 1;
-            ALLEGRO_BITMAP *atk = (jogador.tipo_ataque == 1) ? ataque1
-                                : (jogador.tipo_ataque == 2) ? ataque2 : ataque3;
-            al_draw_scaled_bitmap(atk, 128 * f, 0, 128, 128,
-                                  draw_x - 10, draw_y - 1, ATTACK_DRAW_W, ATTACK_DRAW_H, jogador.direcao);
+            int f  = (int)jogador.frame_ataque;
+            if (f >= mf) f = mf - 1;
+            ALLEGRO_BITMAP *atk = (jogador.tipo_ataque == 1)   ? ataque1
+                                  : (jogador.tipo_ataque == 2) ? ataque2 : ataque3;
+            al_draw_scaled_bitmap(atk, 128*f, 0, 128, 128,
+                                  draw_x - 10, draw_y - 1,
+                                  ATTACK_DRAW_W, ATTACK_DRAW_H, jogador.direcao);
             jogador.frame_ataque += 0.30f;
             if (jogador.frame_ataque >= mf) { jogador.atacando = 0; jogador.frame_ataque = 0; }
         }
         else if (!jogador.no_chao)
         {
             int f = (int)jogador.frame % FRAMES_JUMP;
-            al_draw_scaled_bitmap(jump, 128 * f, 0, 128, 128, draw_x, draw_y, DRAW_W, DRAW_H, jogador.direcao);
+            al_draw_scaled_bitmap(jump, 128*f, 0, 128, 128,
+                                  draw_x, draw_y, DRAW_W, DRAW_H, jogador.direcao);
         }
         else if (jogador.movendo)
         {
             int f = (int)jogador.frame % FRAMES_RUN;
-            al_draw_scaled_bitmap(run, 128 * f, 0, 128, 128, draw_x, draw_y, DRAW_W, DRAW_H, jogador.direcao);
+            al_draw_scaled_bitmap(run, 128*f, 0, 128, 128,
+                                  draw_x, draw_y, DRAW_W, DRAW_H, jogador.direcao);
         }
         else
         {
             int f = (int)jogador.frame % FRAMES_IDLE;
-            al_draw_scaled_bitmap(idle, 128 * f, 0, 128, 128, draw_x, draw_y, DRAW_W, DRAW_H, jogador.direcao);
+            al_draw_scaled_bitmap(idle, 128*f, 0, 128, 128,
+                                  draw_x, draw_y, DRAW_W, DRAW_H, jogador.direcao);
         }
 
         /* overlay vermelho de sanidade */
@@ -1073,22 +1205,34 @@ int main(void)
         desenhar_sanidade(&sanidade, spr_sanidade);
         desenhar_aviso_sanidade(&sanidade, fonte, al_get_time());
 
+        /* HUD ataque â€” canto inferior direito (sempre visivel) */
+        desenhar_hud_ataque(ataque1, ataque2, ataque3,
+                            habilidade1, habilidade2, habilidade3,
+                            jogador.tipo_ataque, fonte_hud);
+
         /* game over por sanidade */
         if (sanidade.game_over)
         {
-            al_draw_text(fonte, al_map_rgba(0, 0, 0, 200), LARGURA / 2.0f + 4, ALTURA / 2.0f - 50 + 4, ALLEGRO_ALIGN_CENTER, "GAME OVER");
-            al_draw_text(fonte, al_map_rgb(255, 255, 255),  LARGURA / 2.0f,     ALTURA / 2.0f - 50,     ALLEGRO_ALIGN_CENTER, "GAME OVER");
-            al_draw_text(fonte_hud, al_map_rgba(0, 0, 0, 180), LARGURA / 2.0f + 2, ALTURA / 2.0f + 20 + 2, ALLEGRO_ALIGN_CENTER, "Sua sanidade chegou ao limite...");
-            al_draw_text(fonte_hud, al_map_rgb(255, 200, 200), LARGURA / 2.0f,     ALTURA / 2.0f + 20,     ALLEGRO_ALIGN_CENTER, "Sua sanidade chegou ao limite...");
+            al_draw_text(fonte, al_map_rgba(0,0,0,200),
+                         LARGURA/2.0f+4, ALTURA/2.0f-50+4, ALLEGRO_ALIGN_CENTER, "GAME OVER");
+            al_draw_text(fonte, al_map_rgb(255,255,255),
+                         LARGURA/2.0f,   ALTURA/2.0f-50,   ALLEGRO_ALIGN_CENTER, "GAME OVER");
+            al_draw_text(fonte_hud, al_map_rgba(0,0,0,180),
+                         LARGURA/2.0f+2, ALTURA/2.0f+20+2, ALLEGRO_ALIGN_CENTER, "Sua sanidade chegou ao limite...");
+            al_draw_text(fonte_hud, al_map_rgb(255,200,200),
+                         LARGURA/2.0f,   ALTURA/2.0f+20,   ALLEGRO_ALIGN_CENTER, "Sua sanidade chegou ao limite...");
         }
 
-        /* fase concluída: mostra aviso e abre ranking */
+        /* fase concluida */
         if (horda.fase_concluida && !sanidade.game_over)
         {
             al_draw_filled_rectangle(0, 0, LARGURA, ALTURA, al_map_rgba(255, 215, 0, 40));
-            al_draw_text(fonte, al_map_rgba(0, 0, 0, 200), LARGURA / 2.0f + 4, ALTURA / 2.0f - 60 + 4, ALLEGRO_ALIGN_CENTER, "50 ZUMBIS ELIMINADOS!");
-            al_draw_text(fonte, al_map_rgb(255, 215, 0),   LARGURA / 2.0f,     ALTURA / 2.0f - 60,     ALLEGRO_ALIGN_CENTER, "50 ZUMBIS ELIMINADOS!");
-            al_draw_text(fonte_hud, al_map_rgb(255, 255, 255), LARGURA / 2.0f, ALTURA / 2.0f, ALLEGRO_ALIGN_CENTER, "Abrindo ranking...");
+            al_draw_text(fonte, al_map_rgba(0,0,0,200),
+                         LARGURA/2.0f+4, ALTURA/2.0f-60+4, ALLEGRO_ALIGN_CENTER, "50 ZUMBIS ELIMINADOS!");
+            al_draw_text(fonte, al_map_rgb(255,215,0),
+                         LARGURA/2.0f,   ALTURA/2.0f-60,   ALLEGRO_ALIGN_CENTER, "50 ZUMBIS ELIMINADOS!");
+            al_draw_text(fonte_hud, al_map_rgb(255,255,255),
+                         LARGURA/2.0f, ALTURA/2.0f, ALLEGRO_ALIGN_CENTER, "Abrindo ranking...");
             al_flip_display();
             al_rest(2.0);
             tela_ranking(queue, timer, fonte, fonte_hud, &tempo, tempo.atual);
@@ -1099,31 +1243,55 @@ int main(void)
         /* pausa */
         if (pausado)
         {
-            al_draw_filled_rectangle(0, 0, LARGURA, ALTURA, al_map_rgba(0, 0, 0, 160));
-            al_draw_filled_rounded_rectangle(LARGURA / 2.0 - 310, ALTURA / 2.0 - 90,
-                                             LARGURA / 2.0 + 310, ALTURA / 2.0 + 70,
-                                             12, 12, al_map_rgb(101, 60, 20));
-            al_draw_rounded_rectangle(LARGURA / 2.0 - 310, ALTURA / 2.0 - 90,
-                                      LARGURA / 2.0 + 310, ALTURA / 2.0 + 70,
-                                      12, 12, al_map_rgb(218, 165, 32), 3);
-            al_draw_text(fonte, al_map_rgba(0, 0, 0, 180), LARGURA / 2.0 + 3, ALTURA / 2.0 - 75 + 3, ALLEGRO_ALIGN_CENTER, "PAUSADO");
-            al_draw_text(fonte, al_map_rgb(255, 215, 0),   LARGURA / 2.0,     ALTURA / 2.0 - 75,     ALLEGRO_ALIGN_CENTER, "PAUSADO");
-            al_draw_text(fonte_hud, al_map_rgba(0, 0, 0, 180), LARGURA / 2.0 + 2, ALTURA / 2.0 + 2, ALLEGRO_ALIGN_CENTER, "Pressione ESC para continuar");
-            al_draw_text(fonte_hud, al_map_rgb(255, 255, 255), LARGURA / 2.0,     ALTURA / 2.0,     ALLEGRO_ALIGN_CENTER, "Pressione ESC para continuar");
+            al_draw_filled_rectangle(0, 0, LARGURA, ALTURA, al_map_rgba(0,0,0,160));
+            al_draw_filled_rounded_rectangle(LARGURA/2.0-310, ALTURA/2.0-90,
+                                             LARGURA/2.0+310, ALTURA/2.0+70,
+                                             12, 12, al_map_rgb(101,60,20));
+            al_draw_rounded_rectangle(LARGURA/2.0-310, ALTURA/2.0-90,
+                                      LARGURA/2.0+310, ALTURA/2.0+70,
+                                      12, 12, al_map_rgb(218,165,32), 3);
+            al_draw_text(fonte, al_map_rgba(0,0,0,180),
+                         LARGURA/2.0+3, ALTURA/2.0-75+3, ALLEGRO_ALIGN_CENTER, "PAUSADO");
+            al_draw_text(fonte, al_map_rgb(255,215,0),
+                         LARGURA/2.0,   ALTURA/2.0-75,   ALLEGRO_ALIGN_CENTER, "PAUSADO");
+            al_draw_text(fonte_hud, al_map_rgba(0,0,0,180),
+                         LARGURA/2.0+2, ALTURA/2.0+2, ALLEGRO_ALIGN_CENTER, "Pressione ESC para continuar");
+            al_draw_text(fonte_hud, al_map_rgb(255,255,255),
+                         LARGURA/2.0,   ALTURA/2.0,   ALLEGRO_ALIGN_CENTER, "Pressione ESC para continuar");
         }
+
+        /* roda de habilidade â€” por cima de tudo */
+        if (roda_aberta)
+            desenhar_roda_habilidade(ataque1, ataque2, ataque3,
+                                     habilidade1, habilidade2, habilidade3,
+                                     roda_selecao, fonte_hud);
 
         al_flip_display();
     }
 
+    /* limpeza */
     free(vetor_vidas);
     liberar_matriz(matriz_dec, lm);
-    al_destroy_bitmap(bg_menu); al_destroy_bitmap(bg);   al_destroy_bitmap(mapa);
-    al_destroy_bitmap(idle);    al_destroy_bitmap(run);   al_destroy_bitmap(jump);
-    al_destroy_bitmap(coracao); al_destroy_bitmap(spr_estamina);
+    al_destroy_bitmap(bg_menu);
+    al_destroy_bitmap(bg);
+    al_destroy_bitmap(mapa);
+    al_destroy_bitmap(idle);
+    al_destroy_bitmap(run);
+    al_destroy_bitmap(jump);
+    al_destroy_bitmap(coracao);
+    al_destroy_bitmap(spr_estamina);
     al_destroy_bitmap(zumbi_sprite);
-    al_destroy_bitmap(ataque1); al_destroy_bitmap(ataque2); al_destroy_bitmap(ataque3);
+    al_destroy_bitmap(ataque1);
+    al_destroy_bitmap(ataque2);
+    al_destroy_bitmap(ataque3);
+    al_destroy_bitmap(habilidade1);
+    al_destroy_bitmap(habilidade2);
+    al_destroy_bitmap(habilidade3);
     if (spr_sanidade) al_destroy_bitmap(spr_sanidade);
-    al_destroy_font(fonte_hud); al_destroy_font(fonte);
-    al_destroy_timer(timer); al_destroy_event_queue(queue); al_destroy_display(display);
+    al_destroy_font(fonte_hud);
+    al_destroy_font(fonte);
+    al_destroy_timer(timer);
+    al_destroy_event_queue(queue);
+    al_destroy_display(display);
     return 0;
 }
